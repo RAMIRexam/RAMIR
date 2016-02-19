@@ -13,10 +13,10 @@
 using namespace cv;
 using namespace std;
 
-//Ptr<BackgroundSubtractor> pMOG;
+Ptr<BackgroundSubtractor> pMOG;
 
-int A = 20;
-int B = 0;
+int A = 500;
+int B = 160;
 int C = 3;
 int D = 3;
 int E = 200;
@@ -29,15 +29,15 @@ Mat model;
 void setHist(int value, void* a)
 {
 	A = value + 1;
-	//pMOG.release();
-	//pMOG = createBackgroundSubtractorMOG2(A, (((double)B) / 10), true);
+	pMOG.release();
+	pMOG = createBackgroundSubtractorMOG2(A, (((double)B) / 10), false);
 }
 
 void setBgThres(int value, void* a)
 {
 	B = value + 1;
-	//pMOG.release();
-	//pMOG = createBackgroundSubtractorMOG2(A, (((double)B) / 10), true);
+	pMOG.release();
+	pMOG = createBackgroundSubtractorMOG2(A, (((double)B) / 10), false);
 }
 
 Mat erodeElement = getStructuringElement(MORPH_RECT, Size(C, C));
@@ -71,6 +71,7 @@ void reset(VideoCapture cap)
 	cvtColor(model, model, CV_BGR2GRAY);
 }
 
+
 void find(Mat src);
 
 int main()
@@ -87,15 +88,15 @@ int main()
 
 	resizeWindow("Settings", 560, 400);
 
-	createTrackbar("BgThreshold", "Settings", &slider1, 255, setHist);
-	createTrackbar("---", "Settings", &slider2, 255, setBgThres);
+	createTrackbar("BgHistory", "Settings", &slider1, 1000, setHist);
+	createTrackbar("BgThreshold", "Settings", &slider2, 400, setBgThres);
 	createTrackbar("ErodeElem", "Settings", &slider3, 40, setErodeElement);
 	createTrackbar("DilateElem", "Settings", &slider4, 40, setDilateElement);
 	createTrackbar("SizeX", "Settings", &slider5, 400, setSizeX);
 	createTrackbar("SizeY", "Settings", &slider6, 400, setSizeY);
 
 	
-	//pMOG = createBackgroundSubtractorMOG2(A, (((double)B) / 10), true);
+	pMOG = createBackgroundSubtractorMOG2(A, (((double)B) / 10), false);
 	
 	cap >> model;
 	cvtColor(model, model, CV_BGR2GRAY);
@@ -104,17 +105,13 @@ int main()
 	{
 		cap >> frame;
 
-		//pMOG->apply(frame, bgsub);
-		cvtColor(frame, gray, CV_BGR2GRAY);
-		subtract(model, gray, temp);
-		abs(temp);
-		threshold(temp, bgsub, A, 255, THRESH_BINARY);
+		pMOG->apply(frame, bgsub);
 
 		cv::erode(bgsub, erode, erodeElement);
 
 		cv::dilate(erode, dilate, dilateElement);
 	
-		Mat elli(F*2,E*2, CV_8UC1, 0.0);
+		/*Mat elli(F*2,E*2, CV_8UC1, 0.0);
 		ellipse(elli, Point(E, F), Size(E, F), 0, 0, 360, Scalar(255),CV_FILLED, 8);
 
 		matchTemplate(dilate, elli, temp, TM_CCORR);
@@ -124,7 +121,7 @@ int main()
 
 		cout << min << "\t" << max << endl;
 
-		imshow("Test", temp);
+		imshow("Test", temp);*/
 		imshow("Window", dilate);
 
 		find(dilate);
@@ -145,9 +142,7 @@ int main()
 }
 
 
-
 RNG rng(12345);
-
 void find(Mat src)
 {
 	Mat src_cpy;
