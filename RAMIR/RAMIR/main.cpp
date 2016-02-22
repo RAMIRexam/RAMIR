@@ -2,6 +2,8 @@
 
 #include <stdlib.h>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <Windows.h>
 
 #include <opencv2\core.hpp>
@@ -14,6 +16,9 @@ using namespace cv;
 using namespace std;
 
 Ptr<BackgroundSubtractor> pMOG;
+
+ofstream ofile;
+ifstream ifile;
 
 int A = 500;
 int B = 160;
@@ -72,12 +77,41 @@ void reset(VideoCapture cap)
 }
 
 
+void loadSettings()
+{
+	ifile.open("Settings.txt");
+
+	if (!ifile.is_open())
+	{
+		exit(-1);
+	}
+
+	char t[100];
+	ifile >> t;
+	istringstream(t) >> A;
+	ifile >> t;
+	istringstream(t) >> B;
+	ifile >> t;
+	istringstream(t) >> C;
+	ifile >> t;
+	istringstream(t) >> D;
+	ifile >> t;
+	istringstream(t) >> E;
+	ifile >> t;
+	istringstream(t) >> F;
+}
+
+
 void find(Mat src);
 
 int main()
 {
 	Mat frame, bgsub, erode, dilate, gray, temp;
-	VideoCapture cap(0);
+
+	loadSettings();
+
+	String video = "videoplayback1.mp4";
+	VideoCapture cap(video);
 
 	if (!cap.isOpened())
 		return -1;
@@ -90,20 +124,34 @@ int main()
 
 	createTrackbar("BgHistory", "Settings", &slider1, 1000, setHist);
 	createTrackbar("BgThreshold", "Settings", &slider2, 400, setBgThres);
-	createTrackbar("ErodeElem", "Settings", &slider3, 40, setErodeElement);
-	createTrackbar("DilateElem", "Settings", &slider4, 40, setDilateElement);
-	createTrackbar("SizeX", "Settings", &slider5, 400, setSizeX);
+	createTrackbar("ErodeElem", "Settings", &slider3, 60, setErodeElement);
+	createTrackbar("DilateElem", "Settings", &slider4, 60, setDilateElement);
+	createTrackbar("SizeX", "Settings", &slider5, 20000, setSizeX);
 	createTrackbar("SizeY", "Settings", &slider6, 400, setSizeY);
 
-	
+	setTrackbarPos("BgHistory", "Settings", A);
+	setTrackbarPos("BgThreshold", "Settings", B);
+	setTrackbarPos("ErodeElem", "Settings", C);
+	setTrackbarPos("DilateElem", "Settings", D);
+	setTrackbarPos("SizeX", "Settings", E);
+	setTrackbarPos("SizeY", "Settings", F);
+
 	pMOG = createBackgroundSubtractorMOG2(A, (((double)B) / 10), false);
 	
-	cap >> model;
-	cvtColor(model, model, CV_BGR2GRAY);
+	cap >> frame;
+	resize(frame, frame, Size(400, 300));
+
+	cvtColor(frame, model, CV_BGR2GRAY);
 
 	while (true)
 	{
 		cap >> frame;
+		if (frame.empty())
+		{
+			cap.release();
+			cap.open(video);
+			cap >> frame;
+		}
 
 		pMOG->apply(frame, bgsub);
 
@@ -115,20 +163,39 @@ int main()
 		ellipse(elli, Point(E, F), Size(E, F), 0, 0, 360, Scalar(255),CV_FILLED, 8);
 
 		matchTemplate(dilate, elli, temp, TM_CCORR);
+		normalize(temp, temp, 0, 1, NORM_MINMAX, -1, Mat());
 
 		double min, max;
-		minMaxLoc(temp, &min, &max);
+		Point minLoc; 
+		Point maxLoc;
+		minMaxLoc(temp, &min, &max, &minLoc, &maxLoc, Mat());
 
-		cout << min << "\t" << max << endl;
+		cout << min << "\t" << max << "\t" << minLoc << "\t" << maxLoc << endl;
 
 		imshow("Test", temp);*/
-		imshow("Window", dilate);
+
+		imshow("Window", frame);
 
 		find(dilate);
 
 		switch (waitKey(1))
 		{
 		case 27:
+			cap.release();
+			destroyAllWindows();
+			
+			ofile.open("Settings.txt");
+
+			ofile << A << "\n";
+			ofile << B << "\n";
+			ofile << C << "\n";
+			ofile << D << "\n";
+			ofile << E << "\n";
+			ofile << F << "\n";
+
+			ofile.flush();
+			ofile.close();
+
 			return 0;
 			break;
 		case 13:
@@ -136,8 +203,6 @@ int main()
 			break;
 		}
 	}
-
-	destroyAllWindows();
 	return 0;
 }
 
@@ -150,32 +215,34 @@ void find(Mat src)
 	vector<vector<Point> > contours;
 	vector<Vec4i> hierarchy;
 
-	/// Find contours
+
 	findContours(src_cpy, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 
-	/// Get the moments
-	vector<Moments> mu(contours.size());
-	for (int i = 0; i < contours.size(); i++)
+
+	vector<Moments> mu;
+	for (unsigned int i = 0; i < contours.size(); i++)
 	{
-		mu[i] = moments(contours[i], false);
+		if (moments(contours[i], false).m00 >= E)
+			mu.push_back(moments(contours[i], false));
 	}
 
-	///  Get the mass centers:
-	vector<Point2f> mc(contours.size());
-	for (int i = 0; i < contours.size(); i++)
+
+	vector<Point2f> mc;
+	for (Moments m : mu)
 	{
-		mc[i] = Point2f(mu[i].m10 / mu[i].m00, mu[i].m01 / mu[i].m00);
+		cout << m.m00 << endl;
+		mc.push_back(Point2f(m.m10 / m.m00, m.m01 / m.m00));
 	}
 
 
 	Mat temp;
 	cvtColor(src, temp, CV_GRAY2BGR, 3);
-	for (int i = 0; i< contours.size(); i++)
+	for (Point2f p : mc)
 	{
-		circle(temp, mc[i], 10, Scalar(0, 255,0), 2);
+		ellipse(temp, p, Size(40, 40), 0, 0, 360, Scalar(0, 255, 0), 1);
 	}
 
-	/// Show in a window
+
 	namedWindow("Contours", CV_WINDOW_AUTOSIZE);
 	imshow("Contours", temp);
 }
