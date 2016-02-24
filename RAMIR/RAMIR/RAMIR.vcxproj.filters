@@ -23,6 +23,9 @@
     <Text Include="Settings.txt">
       <Filter>Resource Files</Filter>
     </Text>
+    <Text Include="Information.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <Media Include="videoplayback1.mp4">

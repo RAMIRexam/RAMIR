@@ -1,4 +1,4 @@
-
+//RAMIR
 
 #include <stdlib.h>
 #include <iostream>
@@ -77,6 +77,22 @@ void reset(VideoCapture cap)
 }
 
 
+void saveSettings()
+{
+	ofile.open("Settings.txt");
+
+	ofile << A << "\n";
+	ofile << B << "\n";
+	ofile << C << "\n";
+	ofile << D << "\n";
+	ofile << E << "\n";
+	ofile << F << "\n";
+
+	ofile.flush();
+	ofile.close();
+}
+
+
 void loadSettings()
 {
 	ifile.open("Settings.txt");
@@ -117,7 +133,6 @@ int main()
 		return -1;
 
 	namedWindow("Window", WINDOW_AUTOSIZE);
-	namedWindow("Test", WINDOW_AUTOSIZE);
 	namedWindow("Settings", WINDOW_NORMAL);
 
 	resizeWindow("Settings", 560, 400);
@@ -150,6 +165,9 @@ int main()
 		{
 			cap.release();
 			cap.open(video);
+			
+			pMOG = createBackgroundSubtractorMOG2(A, (((double)B) / 10), false);
+
 			cap >> frame;
 		}
 
@@ -158,21 +176,6 @@ int main()
 		cv::erode(bgsub, erode, erodeElement);
 
 		cv::dilate(erode, dilate, dilateElement);
-	
-		/*Mat elli(F*2,E*2, CV_8UC1, 0.0);
-		ellipse(elli, Point(E, F), Size(E, F), 0, 0, 360, Scalar(255),CV_FILLED, 8);
-
-		matchTemplate(dilate, elli, temp, TM_CCORR);
-		normalize(temp, temp, 0, 1, NORM_MINMAX, -1, Mat());
-
-		double min, max;
-		Point minLoc; 
-		Point maxLoc;
-		minMaxLoc(temp, &min, &max, &minLoc, &maxLoc, Mat());
-
-		cout << min << "\t" << max << "\t" << minLoc << "\t" << maxLoc << endl;
-
-		imshow("Test", temp);*/
 
 		imshow("Window", frame);
 
@@ -184,20 +187,11 @@ int main()
 			cap.release();
 			destroyAllWindows();
 			
-			ofile.open("Settings.txt");
-
-			ofile << A << "\n";
-			ofile << B << "\n";
-			ofile << C << "\n";
-			ofile << D << "\n";
-			ofile << E << "\n";
-			ofile << F << "\n";
-
-			ofile.flush();
-			ofile.close();
+			saveSettings();
 
 			return 0;
 			break;
+
 		case 13:
 			reset(cap);
 			break;
@@ -205,6 +199,7 @@ int main()
 	}
 	return 0;
 }
+
 
 
 RNG rng(12345);
@@ -224,13 +219,13 @@ void find(Mat src)
 	{
 		if (moments(contours[i], false).m00 >= E)
 			mu.push_back(moments(contours[i], false));
+
 	}
 
 
 	vector<Point2f> mc;
 	for (Moments m : mu)
 	{
-		cout << m.m00 << endl;
 		mc.push_back(Point2f(m.m10 / m.m00, m.m01 / m.m00));
 	}
 
@@ -242,6 +237,7 @@ void find(Mat src)
 		ellipse(temp, p, Size(40, 40), 0, 0, 360, Scalar(0, 255, 0), 1);
 	}
 
+	line(temp, Point(temp.cols / 2, 0), Point(temp.cols / 2, temp.rows), Scalar(255, 0, 0), 2);
 
 	namedWindow("Contours", CV_WINDOW_AUTOSIZE);
 	imshow("Contours", temp);
