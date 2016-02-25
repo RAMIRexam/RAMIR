@@ -2,9 +2,8 @@
 
 #include <stdlib.h>
 #include <iostream>
-#include <fstream>
-#include <sstream>
 #include <Windows.h>
+#include "Settings.hpp"
 
 #include <opencv2\core.hpp>
 #include <opencv2\opencv.hpp>
@@ -17,114 +16,13 @@ using namespace std;
 
 Ptr<BackgroundSubtractor> pMOG;
 
-ofstream ofile;
-ifstream ifile;
-
-int A = 500;
-int B = 160;
-int C = 3;
-int D = 3;
-int E = 200;
-int F = 100;
-
-int slider1=A, slider2=B, slider3=C, slider4=D, slider5=E, slider6=F;
-
-Mat model;
-
-void setHist(int value, void* a)
-{
-	A = value + 1;
-	pMOG.release();
-	pMOG = createBackgroundSubtractorMOG2(A, (((double)B) / 10), false);
-}
-
-void setBgThres(int value, void* a)
-{
-	B = value + 1;
-	pMOG.release();
-	pMOG = createBackgroundSubtractorMOG2(A, (((double)B) / 10), false);
-}
-
-Mat erodeElement = getStructuringElement(MORPH_RECT, Size(C, C));
-void setErodeElement(int value, void* a)
-{
-	C = value + 1;
-	erodeElement = getStructuringElement(MORPH_RECT, Size(C, C));
-}
-
-Mat dilateElement = getStructuringElement(MORPH_RECT, Size(D, D));
-void setDilateElement(int value, void* a)
-{
-	D = value + 1;
-	dilateElement = getStructuringElement(MORPH_RECT, Size(D, D));
-}
-
-void setSizeX(int value, void *a)
-{
-	E = value + 1;
-}
-
-void setSizeY(int value, void *a)
-{
-	F = value + 1;
-}
-
-
-void reset(VideoCapture cap)
-{
-	cap >> model;
-	cvtColor(model, model, CV_BGR2GRAY);
-}
-
-
-void saveSettings()
-{
-	ofile.open("Settings.txt");
-
-	ofile << A << "\n";
-	ofile << B << "\n";
-	ofile << C << "\n";
-	ofile << D << "\n";
-	ofile << E << "\n";
-	ofile << F << "\n";
-
-	ofile.flush();
-	ofile.close();
-}
-
-
-void loadSettings()
-{
-	ifile.open("Settings.txt");
-
-	if (!ifile.is_open())
-	{
-		exit(-1);
-	}
-
-	char t[100];
-	ifile >> t;
-	istringstream(t) >> A;
-	ifile >> t;
-	istringstream(t) >> B;
-	ifile >> t;
-	istringstream(t) >> C;
-	ifile >> t;
-	istringstream(t) >> D;
-	ifile >> t;
-	istringstream(t) >> E;
-	ifile >> t;
-	istringstream(t) >> F;
-}
-
-
 void find(Mat src);
 
 int main()
 {
 	Mat frame, bgsub, erode, dilate, gray, temp;
 
-	loadSettings();
+	Settings::loadSettings();
 
 	String video = "videoplayback1.mp4";
 	VideoCapture cap(video);
@@ -133,30 +31,10 @@ int main()
 		return -1;
 
 	namedWindow("Window", WINDOW_AUTOSIZE);
-	namedWindow("Settings", WINDOW_NORMAL);
 
-	resizeWindow("Settings", 560, 400);
-
-	createTrackbar("BgHistory", "Settings", &slider1, 1000, setHist);
-	createTrackbar("BgThreshold", "Settings", &slider2, 400, setBgThres);
-	createTrackbar("ErodeElem", "Settings", &slider3, 60, setErodeElement);
-	createTrackbar("DilateElem", "Settings", &slider4, 60, setDilateElement);
-	createTrackbar("SizeX", "Settings", &slider5, 20000, setSizeX);
-	createTrackbar("SizeY", "Settings", &slider6, 400, setSizeY);
-
-	setTrackbarPos("BgHistory", "Settings", A);
-	setTrackbarPos("BgThreshold", "Settings", B);
-	setTrackbarPos("ErodeElem", "Settings", C);
-	setTrackbarPos("DilateElem", "Settings", D);
-	setTrackbarPos("SizeX", "Settings", E);
-	setTrackbarPos("SizeY", "Settings", F);
-
-	pMOG = createBackgroundSubtractorMOG2(A, (((double)B) / 10), false);
+	pMOG = createBackgroundSubtractorMOG2(Settings::getA(), (((double)Settings::getB()) / 10), false);
 	
-	cap >> frame;
-	resize(frame, frame, Size(400, 300));
-
-	cvtColor(frame, model, CV_BGR2GRAY);
+	Settings::init(&pMOG);
 
 	while (true)
 	{
@@ -166,16 +44,15 @@ int main()
 			cap.release();
 			cap.open(video);
 			
-			pMOG = createBackgroundSubtractorMOG2(A, (((double)B) / 10), false);
+			pMOG = createBackgroundSubtractorMOG2(Settings::getA(), (((double)Settings::getB()) / 10), false);
 
 			cap >> frame;
 		}
 
 		pMOG->apply(frame, bgsub);
 
-		cv::erode(bgsub, erode, erodeElement);
-
-		cv::dilate(erode, dilate, dilateElement);
+		cv::erode(bgsub, erode, Settings::getErodeElement());
+		cv::dilate(erode, dilate, Settings::getDilateElement());
 
 		imshow("Window", frame);
 
@@ -183,18 +60,16 @@ int main()
 
 		switch (waitKey(1))
 		{
-		case 27:
-			cap.release();
-			destroyAllWindows();
+
+			case 27:
+				cap.release();
+				destroyAllWindows();
 			
-			saveSettings();
+				Settings::saveSettings();
 
-			return 0;
-			break;
+				return 0;
+				break;
 
-		case 13:
-			reset(cap);
-			break;
 		}
 	}
 	return 0;
@@ -217,7 +92,7 @@ void find(Mat src)
 	vector<Moments> mu;
 	for (unsigned int i = 0; i < contours.size(); i++)
 	{
-		if (moments(contours[i], false).m00 >= E)
+		if (moments(contours[i], false).m00 >= Settings::getE())
 			mu.push_back(moments(contours[i], false));
 
 	}
