@@ -147,12 +147,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Settings.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="Information.txt" />
     <Text Include="Settings.txt" />
   </ItemGroup>
   <ItemGroup>
     <Media Include="videoplayback1.mp4" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Settings.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

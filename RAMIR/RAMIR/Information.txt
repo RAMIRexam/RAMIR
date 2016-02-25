@@ -1,0 +1,6 @@
+1
+	Bakgrundssubtraktionen MOG saknar ett metod som beskrivs i "Robust and Efficient Foreground Analysis" 
+	som gör att den filtrerar bort skuggor.
+
+2
+	Vet inte hur de plockar ut objekt ur förgrunden. Vi använder moments för att lösa detta.

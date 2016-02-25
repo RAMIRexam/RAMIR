@@ -18,9 +18,15 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Settings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Settings.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="Information.txt">
       <Filter>Resource Files</Filter>
     </Text>
   </ItemGroup>
@@ -28,5 +34,10 @@
     <Media Include="videoplayback1.mp4">
       <Filter>Resource Files</Filter>
     </Media>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Settings.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
