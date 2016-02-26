@@ -24,7 +24,7 @@ int main()
 
 	Settings::loadSettings();
 
-	String video = "videoplayback1.mp4";
+	String video = "videoplayback2.mp4";
 	VideoCapture cap(video);
 
 	if (!cap.isOpened())
