@@ -20,11 +20,11 @@ void find(Mat src);
 
 int main()
 {
-	Mat frame, bgsub, erode, dilate, gray, temp;
+	Mat frame, prevBG, bgsub, erode, dilate, gray, temp, hist1, hist2;
 
 	Settings::loadSettings();
 
-	String video = "videoplayback1.mp4";
+	String video = "videoplayback2.mp4";
 	VideoCapture cap(video);
 
 	if (!cap.isOpened())
@@ -33,7 +33,21 @@ int main()
 	namedWindow("Window", WINDOW_AUTOSIZE);
 
 	pMOG = createBackgroundSubtractorMOG2(Settings::getA(), (((double)Settings::getB()) / 10), false);
-	
+
+
+	//--------------TESTING--------------------------------
+	int hbins = 30, sbins = 32;
+	int histSize[] = { hbins, sbins };
+	float hranges[] = { 0, 180 };
+	float sranges[] = { 0, 256 };
+	const float* ranges[] = { hranges, sranges };
+	int channels[] = { 0, 1 };
+
+	cap >> frame; //TESTING!
+	pMOG->apply(frame, bgsub); //TESTING!
+	//------------------------------------------------------
+
+
 	Settings::init(&pMOG);
 
 	while (true)
@@ -45,11 +59,23 @@ int main()
 			cap.open(video);
 			
 			pMOG = createBackgroundSubtractorMOG2(Settings::getA(), (((double)Settings::getB()) / 10), false);
-
+			
 			cap >> frame;
 		}
-
+		prevBG = bgsub;
 		pMOG->apply(frame, bgsub);
+
+
+		//--------------------TEST----------------------
+		//calcHist(&bgsub, 1, channels, Mat(), hist1, 2, histSize, ranges);
+		//calcHist(&prevBG, 1, channels, Mat(), hist2, 2, histSize, ranges);
+		calcHist(&bgsub, 1, 0, Mat(), hist1, 1, histSize, ranges);
+		calcHist(&prevBG, 1, 0, Mat(), hist2, 1, histSize, ranges);
+
+		double val = compareHist(hist1, hist2, CV_COMP_BHATTACHARYYA);
+
+		cout << val << endl;
+		//-----------------------------------------------
 
 		cv::erode(bgsub, erode, Settings::getErodeElement());
 		cv::dilate(erode, dilate, Settings::getDilateElement());
