@@ -287,3 +287,34 @@ void find(Mat binImage, vector<vector<Point>> contours)
 	imshow("Contours", colorImage);
 
 }
+
+
+//--------------------PSEUDOKOD TRACKING----------------
+
+while (true)
+{
+	//CAPTURE IMAGE
+	//BGSUB
+	//DILATE
+	//GET ALL CONTOURS FROM DILATE
+
+	if (CONTOURS.size > 0){
+		//getallrects
+		//create new trackers for all rects
+
+		if (trackers == 0) {
+			//new trackers >> trackers
+		} 
+		else{
+
+		//check intersection between rects and trackers
+		//calc ROI and hist for intersecting rects
+		//compare hist with trackers
+		//update tracker
+
+	}
+	//countors == 0
+	else {
+		//delete all trackers
+	}
+}
