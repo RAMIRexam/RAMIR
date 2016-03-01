@@ -30,3 +30,10 @@ void Tracker::setLastHist(Mat h) {
 	Tracker::lastHist = h;
 }
 
+/*
+If survivalTest returns false the tracker shall be destroyed
+*/
+bool Tracker::survivalTest() {
+	if()
+}
+

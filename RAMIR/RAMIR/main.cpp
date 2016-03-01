@@ -185,6 +185,12 @@ int main()
 		}
 
 
+		for (Tracker t : trackers) {
+			if (!t.survivalTest())
+				t.~Tracker();
+		}
+
+
 
 
 		switch (waitKey(1))
@@ -300,17 +306,20 @@ while (true)
 
 	if (CONTOURS.size > 0){
 		//getallrects
-		//create new trackers for all rects
+		//create candidate trackers for all rects
 
-		if (trackers == 0) {
-			//new trackers >> trackers
+		if (trackers == 0) { - kan inte jämföra med några trackers...
+			//candidate trackers >> trackers
 		} 
+		
 		else{
 
 		//check intersection between rects and trackers
 		//calc ROI and hist for intersecting rects
 		//compare hist with trackers
 		//update tracker
+
+		//(delete unupdated trackers)
 
 	}
 	//countors == 0

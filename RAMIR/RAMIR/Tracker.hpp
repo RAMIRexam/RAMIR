@@ -4,6 +4,7 @@
 
 #include <fstream>
 #include <sstream>
+#include "Blob.hpp"
 
 #include <opencv2\core.hpp>
 #include <opencv2\highgui.hpp>
@@ -25,8 +26,11 @@ public:
 	void setLastRect(Rect r);
 	void setLastHist(Mat h);
 	Mat getLastHist();
+	bool Tracker::survivalTest();
+
 
 private:
+	vector<Blob> Blobvector; 
 	int numberTracks;
 	Rect lastRect;
 	Mat lastHist;
