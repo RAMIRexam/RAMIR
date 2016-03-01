@@ -92,88 +92,98 @@ int main()
 
 		vector<vector<Point>> contours = myFindContours(dilate);
 
+		
+		
+		vector<Rect> allRects = getAllRects(contours);
+		createBlobs(allRects);
 
-		if (contours.size() > 0) {
-			//marks the centroid
-			find(dilate, contours);
 
+		
+		//finds the centroid
+		find(dilate, contours);
+		
+		if (trackers == 0) {
+			//create trackers for all blobs
+			//remove blobs from bloblist
+			//candidate trackers >> trackers
+		}
 
-			//---------------GET INTERSECTING RECTS------------------------------
+		//---------------GET INTERSECTING RECTS------------------------------
 			
-			vector<Rect> interRects; //Rectangles that intersect with the old one
+		vector<Rect> interRects; //Rectangles that intersect with the old one
 
-			vector<Rect> allRects = getAllRects(contours);
-			vector<Tracker> newTrackers = createTrackers(allRects);
+		vector<Rect> allRects = getAllRects(contours);
+		vector<Tracker> newTrackers = createTrackers(allRects);
 			
-			//first time
-			if (trackers.size() == 0) {
+		//first time
+		if (trackers.size() == 0) {
 				
-				while (newTrackers.size() > 0) {
-					trackers.push_back(newTrackers.back());		//move the tracker
-					newTrackers.pop_back();						//delete the tracker
-				}
-
-				//calc hist for all trackers---
-				//??
-				//-------------------------------
-				
+			while (newTrackers.size() > 0) {
+				trackers.push_back(newTrackers.back());		//move the tracker
+				newTrackers.pop_back();						//delete the tracker
 			}
-			else {
 
-				int trackercount = 0; //for debugging
+			//calc hist for all trackers---
+			//??
+			//-------------------------------
 				
-				for (Tracker t : trackers) {
-					trackercount++;
-					for (Rect r : allRects) {
+		}
+		else {
 
-						//check whether the rectangles intersect , ("&" = "snittet")
-						if ((r & t.getLastRect()).area() > 0) {
-							interRects.push_back(r);
-						}
+			int trackercount = 0; //for debugging
+				
+			for (Tracker t : trackers) {
+				trackercount++;
+				for (Rect r : allRects) {
+
+					//check whether the rectangles intersect , ("&" = "snittet")
+					if ((r & t.getLastRect()).area() > 0) {
+						interRects.push_back(r);
 					}
-					cout << "tracker: " << trackercount << "\t intersecting rects: " << interRects.size() << endl;
-					//--------------------------------------------------------------------
+				}
+				cout << "tracker: " << trackercount << "\t intersecting rects: " << interRects.size() << endl;
+				//--------------------------------------------------------------------
 
 
 
-					//---------------CALC ROI AND HIST------------------------------------
-					vector<Mat> interROIs; //intersecting Region of interest's
+				//---------------CALC ROI AND HIST------------------------------------
+				vector<Mat> interROIs; //intersecting Region of interest's
 
-					vector<Mat> hists;
-					Mat bestROI;
-					double minBhatta = DBL_MAX;
+				vector<Mat> hists;
+				Mat bestROI;
+				double minBhatta = DBL_MAX;
 
-					for (Rect r : interRects) {
-						//interROIs.push_back(frame(r));
-						Mat ROI = frame(r);
-						calcHist(&ROI, 1, channels, Mat(), tempHist, 2, histSize, ranges);
-						//hists.push_back(tempHist);
-						createHist(channels, histSize, )
+				for (Rect r : interRects) {
+					//interROIs.push_back(frame(r));
+					Mat ROI = frame(r);
+					calcHist(&ROI, 1, channels, Mat(), tempHist, 2, histSize, ranges);
+					//hists.push_back(tempHist);
+					createHist(channels, histSize, )
 						
 
-						double bhatta = compareHist(tempHist, t.getLastHist(), CV_COMP_BHATTACHARYYA);
+					double bhatta = compareHist(tempHist, t.getLastHist(), CV_COMP_BHATTACHARYYA);
 
-						if (bhatta < minBhatta) {
-							minBhatta = bhatta;
-							bestROI = ROI;
+					if (bhatta < minBhatta) {
+						minBhatta = bhatta;
+						bestROI = ROI;
 							
-							//update tracker
-							t.setLastHist(tempHist);
-							t.setLastRect(r);
-						}
+						//update tracker
+						t.setLastHist(tempHist);
+						t.setLastRect(r);
 					}
-					//--------------------------------------------------------------------
-					
-					//---------------CALCULATE HISTOGRAM----------------------------------
-					//--------------------TEST----------------------
-					//calcHist(&bgsub, 1, channels, Mat(), hist1, 2, histSize, ranges);
-					//calcHist(&prevBG, 1, channels, Mat(), hist2, 2, histSize, ranges);
-					//calcHist(&bgsub, 1, 0, Mat(), hist1, 1, histSize, ranges);
-					//calcHist(&prevBG, 1, 0, Mat(), hist2, 1, histSize, ranges);
-					//--------------------------------------------------------------------
 				}
+				//--------------------------------------------------------------------
+					
+				//---------------CALCULATE HISTOGRAM----------------------------------
+				//--------------------TEST----------------------
+				//calcHist(&bgsub, 1, channels, Mat(), hist1, 2, histSize, ranges);
+				//calcHist(&prevBG, 1, channels, Mat(), hist2, 2, histSize, ranges);
+				//calcHist(&bgsub, 1, 0, Mat(), hist1, 1, histSize, ranges);
+				//calcHist(&prevBG, 1, 0, Mat(), hist2, 1, histSize, ranges);
+				//--------------------------------------------------------------------
 			}
 		}
+		
 
 		//countors == 0
 		else {
@@ -208,6 +218,20 @@ int main()
 	}
 	return 0;
 }
+
+/*
+Creates blobs from rectangles
+*/
+vector<Blob> createBlobs(vector<Rect> rects) {
+	for (Rect r : rects) {
+		
+		härejag 
+		Blob b(Mat hist, Rect rect, Mat ROI);
+	}
+}
+
+
+
 /*
 Creates new trackers from given rectangles
 */
@@ -295,94 +319,3 @@ void find(Mat binImage, vector<vector<Point>> contours)
 }
 
 
-//--------------------PSEUDOKOD TRACKING----------------
-
-while (true)
-{
-	//CAPTURE IMAGE
-	//BGSUB
-	//DILATE
-	//GET ALL CONTOURS FROM DILATE
-
-	
-	//getallrects
-	//create blobs for all rects
-
-	if (trackers == 0) { - kan inte jämföra med några trackers...
-		//create trackers for all blobs
-		//candidate trackers >> trackers
-	}
-		
-	else { //- there is 2 outcomes - the 2 outcomes -> match with tracker OR new tracker
-
-		for (Tracker t : trackers) {
-			//init intersecting rect variables
-			for (Blob b : allBlobs) {
-				
-				/*
-				(1)  -match with tracker?
-				*/
-				if (blob intersect with tracker) {
-					//calculate and update the one with least bhattacharryan coeff
-					//throw other intersecting rects - (will be done automaticly)
-				}
-				/*
-				(2)  -new tracker
-				*/
-				else {
-					//create new tracker
-					//create new blob (calc ROI and hist)
-					//tracker = processed
-				}
-			}
-
-			/*
-				If a rect match the tracker
-			*/
-			if (a blob intersect with the tracker) {
-				//create new blob for intersecting rect (calc ROI and hist)
-				//fill the tracker with the new blob
-				//tracker.processed = true
-			}
-			//the tracker has no intersecting blobs
-			else {
-				//t.fillWithEmptyBlob();
-				//tracker.processed = true
-			}
-			
-			
-			
-		}
-
-		for (Tracker t : trackers) {
-			if (tracker != processed) {
-				//t.fillWithEmptyBlob();
-				//tracker.processed = true;
-			}
-		}
-	}
-	
-
-
-
-	Test::trackerTest(trackers); //assertiontest for trackers
-
-	//check if trackers shall survive
-	for (Tracker t : trackers) {
-		if (t.survivaltest()) {
-			t.~tracker();
-		}
-	}
-
-	//reset processed for next iteration
-	for (Trackers t : trackers) {
-		t.processed = false;
-	}
-}
-
-
-/*
-if more than one rect intersect with a trackerobject, only one shall be used, the others shall be tossed.
-
-
-*/

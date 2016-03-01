@@ -38,6 +38,9 @@
     <Text Include="Information.txt">
       <Filter>Resource Files</Filter>
     </Text>
+    <Text Include="pseudocode_main.txt">
+      <Filter>Source Files</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <Media Include="videoplayback1.mp4">

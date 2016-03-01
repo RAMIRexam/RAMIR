@@ -1,0 +1,89 @@
+//--------------------PSEUDOKOD TRACKING----------------
+
+while (true)
+{
+	//CAPTURE IMAGE
+	//BGSUB
+	//DILATE
+	//GET ALL CONTOURS FROM DILATE
+
+	
+	//getallrects
+	//create blobs for all rects
+
+	if (trackers == 0) { - kan inte jämföra med några trackers...
+		//create trackers for all blobs
+		//remove blobs from bloblist
+		//candidate trackers >> trackers
+	}
+		
+	else { //- there is 2 outcomes -> match with tracker OR new tracker
+
+		for (Tracker t : trackers) {
+			//init intersecting rect variables
+			for (Blob b : allBlobs) {
+				
+				/*
+				(1)  -match with tracker?
+				*/
+				if (blob intersect with tracker) {
+					//calculate and update the one with least bhattacharryan coeff
+					//throw other intersecting rects (pop)
+				}
+			}
+
+			/*
+				If a rect match the tracker
+			*/
+			if (a blob intersect with the tracker) {
+				//fill the tracker with the new blob
+				//remove blob from bloblist (already done)
+				//tracker.processed = true
+			}
+			//the tracker has no intersecting blobs
+			else {
+				//t.fillWithEmptyBlob();
+				//tracker.processed = true
+			}
+			
+		}
+
+		//iterate throught the rest of the blobs and create trackers for them
+		for (Blob b : blobs) {
+			//create new tracker
+			//tracker = processed
+		}
+
+
+		for (Tracker t : trackers) {
+			if (tracker != processed) {
+				//t.fillWithEmptyBlob();
+				//tracker.processed = true;
+			}
+		}
+	}
+	
+
+
+
+	Test::trackerTest(trackers); //assertiontest for trackers
+
+	//check if trackers shall survive
+	for (Tracker t : trackers) {
+		if (t.survivaltest()) {
+			t.~tracker();
+		}
+	}
+
+	//reset processed for next iteration
+	for (Trackers t : trackers) {
+		t.processed = false;
+	}
+}
+
+
+/*
+if more than one rect intersect with a trackerobject, only one shall be used, the others shall be tossed.
+
+
+*/
