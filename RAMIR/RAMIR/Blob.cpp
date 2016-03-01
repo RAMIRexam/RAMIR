@@ -7,7 +7,9 @@ Blob::Blob(Mat hist, Rect rect, Mat ROI) {
 	setHist(hist);
 	setRect(rect);
 	setROI(ROI);
-	
+}
+Blob::Blob() {
+	emptyBlob = true;
 }
 
 Blob::~Blob() {
@@ -28,7 +30,7 @@ void Blob::setHist(Mat hist) {
 Rect Blob::getRect() {
 
 }
-void Blob::setRect(Mat Rect) {
+void Blob::setRect(Rect Rect) {
 
 }
 

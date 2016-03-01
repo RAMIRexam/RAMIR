@@ -146,8 +146,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Blob.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Settings.cpp" />
+    <ClCompile Include="Test.cpp" />
     <ClCompile Include="Tracker.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -158,7 +160,9 @@
     <Media Include="videoplayback1.mp4" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Blob.hpp" />
     <ClInclude Include="Settings.hpp" />
+    <ClInclude Include="Test.hpp" />
     <ClInclude Include="Tracker.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

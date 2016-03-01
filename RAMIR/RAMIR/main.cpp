@@ -304,26 +304,85 @@ while (true)
 	//DILATE
 	//GET ALL CONTOURS FROM DILATE
 
-	if (CONTOURS.size > 0){
-		//getallrects
-		//create candidate trackers for all rects
+	
+	//getallrects
+	//create blobs for all rects
 
-		if (trackers == 0) { - kan inte jämföra med några trackers...
-			//candidate trackers >> trackers
-		} 
-		
-		else{
-
-		//check intersection between rects and trackers
-		//calc ROI and hist for intersecting rects
-		//compare hist with trackers
-		//update tracker
-
-		//(delete unupdated trackers)
-
+	if (trackers == 0) { - kan inte jämföra med några trackers...
+		//create trackers for all blobs
+		//candidate trackers >> trackers
 	}
-	//countors == 0
-	else {
-		//delete all trackers
+		
+	else { //- there is 2 outcomes - the 2 outcomes -> match with tracker OR new tracker
+
+		for (Tracker t : trackers) {
+			//init intersecting rect variables
+			for (Blob b : allBlobs) {
+				
+				/*
+				(1)  -match with tracker?
+				*/
+				if (blob intersect with tracker) {
+					//calculate and update the one with least bhattacharryan coeff
+					//throw other intersecting rects - (will be done automaticly)
+				}
+				/*
+				(2)  -new tracker
+				*/
+				else {
+					//create new tracker
+					//create new blob (calc ROI and hist)
+					//tracker = processed
+				}
+			}
+
+			/*
+				If a rect match the tracker
+			*/
+			if (a blob intersect with the tracker) {
+				//create new blob for intersecting rect (calc ROI and hist)
+				//fill the tracker with the new blob
+				//tracker.processed = true
+			}
+			//the tracker has no intersecting blobs
+			else {
+				//t.fillWithEmptyBlob();
+				//tracker.processed = true
+			}
+			
+			
+			
+		}
+
+		for (Tracker t : trackers) {
+			if (tracker != processed) {
+				//t.fillWithEmptyBlob();
+				//tracker.processed = true;
+			}
+		}
+	}
+	
+
+
+
+	Test::trackerTest(trackers); //assertiontest for trackers
+
+	//check if trackers shall survive
+	for (Tracker t : trackers) {
+		if (t.survivaltest()) {
+			t.~tracker();
+		}
+	}
+
+	//reset processed for next iteration
+	for (Trackers t : trackers) {
+		t.processed = false;
 	}
 }
+
+
+/*
+if more than one rect intersect with a trackerobject, only one shall be used, the others shall be tossed.
+
+
+*/

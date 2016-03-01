@@ -16,15 +16,18 @@ class Blob {
 
 public:
 
-	Blob(Mat hist, Mat ROI, Rect rect);
+	Blob(Mat hist, Rect rect, Mat ROI);
+	Blob::Blob();							//create emptyblob
 	~Blob();
 
 	Rect getRect();
-	void setRect();
+	void setRect(Rect rect);
 	Mat getROI();
-	void setROI();
+	void setROI(Mat ROI);
 	Mat getHist();
-	void setHist();
+	void setHist(Mat hist);
+
+	bool emptyBlob;							//true if this is a emptyblob used for filling the blobvector in tracking
 
 private:
 	Mat hist;

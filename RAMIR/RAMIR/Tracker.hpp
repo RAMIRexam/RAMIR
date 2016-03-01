@@ -12,6 +12,7 @@
 #include <opencv2\video\background_segm.hpp>
 
 using namespace cv;
+using namespace std;
 
 class Tracker {
 
@@ -26,11 +27,16 @@ public:
 	void setLastRect(Rect r);
 	void setLastHist(Mat h);
 	Mat getLastHist();
-	bool Tracker::survivalTest();
+	bool survivalTest();
+	void fillWithBlob(Blob b);
+	void fillWithEmptyBlob();
+
+
+	bool processed;					//true if the tracker is processed this iteration
 
 
 private:
-	vector<Blob> Blobvector; 
+	vector<Blob> blobvector;		//contains all detected blobs in order
 	int numberTracks;
 	Rect lastRect;
 	Mat lastHist;
