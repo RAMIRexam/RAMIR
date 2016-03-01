@@ -20,11 +20,6 @@ std::ifstream Settings::ifile;
 
 
 
-//Emil är bäst såasdlfkjasdfölkahsddff
-
-//aksldkfa
-
-
 
 
 //-------------INIT WINDOW FOR TRACKBARS--------------------
