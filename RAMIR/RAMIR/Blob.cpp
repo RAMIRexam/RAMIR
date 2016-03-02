@@ -7,6 +7,7 @@ Blob::Blob(Mat hist, Rect rect, Mat ROI) {
 	setHist(hist);
 	setRect(rect);
 	setROI(ROI);
+	emptyBlob = false;
 }
 Blob::Blob() {
 	emptyBlob = true;
@@ -20,25 +21,25 @@ Blob::~Blob() {
 
 
 Mat Blob::getHist() {
-
+	return hist;
 }
-void Blob::setHist(Mat hist) {
-
+void Blob::setHist(Mat h) {
+	hist = h;
 }
 
 
 Rect Blob::getRect() {
-
+	return rect;
 }
-void Blob::setRect(Rect Rect) {
-
+void Blob::setRect(Rect r) {
+	rect = r;
 }
 
 
 Mat Blob::getROI() {
-
+	return ROI;
 }
-void Blob::setROI(Mat ROI) {
-
+void Blob::setROI(Mat roi) {
+	ROI = roi;
 }
 

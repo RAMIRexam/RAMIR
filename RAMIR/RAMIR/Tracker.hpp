@@ -4,6 +4,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <iostream>
 #include "Blob.hpp"
 
 #include <opencv2\core.hpp>
@@ -18,18 +19,15 @@ class Tracker {
 
 public:
 
-	Tracker(Rect rect);
+	Tracker(Blob blob);
 	~Tracker();
 
-	void incrementTracks();
-	void init();
-	Rect getLastRect();
-	void setLastRect(Rect r);
-	void setLastHist(Mat h);
-	Mat getLastHist();
+	int getDuration();
+	Blob getLastBlob();
 	bool survivalTest();
 	void fillWithBlob(Blob b);
 	void fillWithEmptyBlob();
+	void printTracker();
 
 
 	bool processed;					//true if the tracker is processed this iteration
@@ -37,11 +35,9 @@ public:
 
 private:
 	vector<Blob> blobvector;		//contains all detected blobs in order
-	int numberTracks;
-	Rect lastRect;
-	Mat lastHist;
-
-
+	int duration;
+	int fullTrackerLife;
+	int trackerLife;
 };
 
 #endif // !SETTINGS_HPP

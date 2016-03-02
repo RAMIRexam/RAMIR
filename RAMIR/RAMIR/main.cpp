@@ -1,4 +1,9 @@
-//RAMIR
+/*
+Copyright RAMIR (Räkning av människor i rörelse) 
+Del1 i Examensarbete - implementering av artikeln "Automatic counting of interacting people by using a single uncalibrated camera".
+
+Emil Andersson and Niklas Schedin 
+*/
 
 #include <stdlib.h>
 #include <iostream>
@@ -19,13 +24,12 @@ Ptr<BackgroundSubtractor> pMOG;
 Mat colorImage;
 
 
-vector<Tracker> createTrackers(vector<Rect> rects);
 void find(Mat binImage, vector<vector<Point>> contours);
 vector<vector<Point>> myFindContours(Mat src);
 vector<Rect> getAllRects(vector<vector<Point>> contours);
+vector<Blob> createBlobs(vector<Rect> rects, Mat image);
 
-
-vector<Tracker> trackers;
+vector<Tracker*> trackers;
 vector<Tracker> alreadyCountedTrackers;
 
 bool paintRect = true;
@@ -62,7 +66,6 @@ int main()
 	//------------------------------------------------------
 
 
-
 	Settings::init(&pMOG);
 
 	while (true)
@@ -89,119 +92,177 @@ int main()
 		cv::dilate(erode, dilate, Settings::getDilateElement());
 
 		imshow("Window", frame);
+		imshow("Dilate Window", dilate);
 
 		vector<vector<Point>> contours = myFindContours(dilate);
-
-		
-		
 		vector<Rect> allRects = getAllRects(contours);
-		createBlobs(allRects);
+		vector<Blob> blobs = createBlobs(allRects, frame);
 
-
-		
 		//finds the centroid
 		find(dilate, contours);
 		
-		if (trackers == 0) {
-			//create trackers for all blobs
-			//remove blobs from bloblist
-			//candidate trackers >> trackers
+		if (trackers.size() == 0) {
+			/*
+			No trackers exists. All blobs will turn to a tracker
+			*/
+			for (Blob b : blobs) {
+				Tracker *t = new Tracker(b);
+
+				cout << t << endl;
+
+				t->processed = true;
+				trackers.push_back(t);
+
+			}
 		}
 
-		//---------------GET INTERSECTING RECTS------------------------------
-			
-		vector<Rect> interRects; //Rectangles that intersect with the old one
+		//there already exists trackers
+		else {
+			for (Tracker *t : trackers) {
+				vector<Blob> restBlobs;
+				Blob bestBlob;				// constructs an emptyblob
+				assert(bestBlob.emptyBlob == true);	//if not change if below
 
-		vector<Rect> allRects = getAllRects(contours);
-		vector<Tracker> newTrackers = createTrackers(allRects);
-			
-		//first time
-		if (trackers.size() == 0) {
+				double minBhatta = DBL_MAX;
+				vector<Mat> isBlobs;			//InterSecting Blobs
 				
-			while (newTrackers.size() > 0) {
-				trackers.push_back(newTrackers.back());		//move the tracker
-				newTrackers.pop_back();						//delete the tracker
+				int blobcounter = 0; //DEBUGGING!
+				int numberBlobs = blobs.size();
+
+				while (blobs.size() > 0) {
+					blobcounter++;//DEBUGGING
+					
+					Blob b = blobs.back();
+					//Pop makes shure other intersecting blobs than the best is ignored
+					blobs.pop_back();
+
+					//intersection test
+					if ((b.getRect() & t->getLastBlob().getRect()).area() > 0) {
+						Mat hist1 = b.getHist();
+						Mat hist2 = t->getLastBlob().getHist();
+
+
+						double bhatta = compareHist(b.getHist(), t->getLastBlob().getHist(), CV_COMP_BHATTACHARYYA);
+
+						if (bhatta < minBhatta) {
+							minBhatta = bhatta;
+
+							bestBlob = b;
+						}
+					}
+					else { restBlobs.push_back(b); }
+				}
+				assert(blobcounter == numberBlobs); //if blob is pop'ed, will all blobs still be iterated?
+				
+				//Debugvariable
+				int testsize = restBlobs.size();
+				
+				blobs = restBlobs; //memcpy(&blobs, &restBlobs, sizeof(restBlobs));
+
+				/*DEBUG*/
+				assert(&blobs != &restBlobs);			
+				assert(blobs.size() == testsize);
+				/*DEBUG*/
+
+				//If intersection
+				if (!bestBlob.emptyBlob) { t->fillWithBlob(bestBlob); }
+				else { t->fillWithEmptyBlob(); }
+					
+				t->processed = true;
+	
+			}
+			
+			//iterate throught the rest of the blobs and create trackers for them
+			for (Blob b : blobs) {
+				Tracker *t = new Tracker(b);
+				t->processed = true;
+				trackers.push_back(t);
+				
 			}
 
-			//calc hist for all trackers---
-			//??
-			//-------------------------------
-				
-		}
-		else {
+			for (Tracker *t : trackers) {
+				if (!t->processed) { 
+					t->fillWithEmptyBlob(); 
+					t->processed = true;
 
-			int trackercount = 0; //for debugging
-				
-			for (Tracker t : trackers) {
-				trackercount++;
-				for (Rect r : allRects) {
+					cout << "Tracker: " << t << endl;
 
-					//check whether the rectangles intersect , ("&" = "snittet")
-					if ((r & t.getLastRect()).area() > 0) {
-						interRects.push_back(r);
-					}
 				}
-				cout << "tracker: " << trackercount << "\t intersecting rects: " << interRects.size() << endl;
-				//--------------------------------------------------------------------
-
-
-
-				//---------------CALC ROI AND HIST------------------------------------
-				vector<Mat> interROIs; //intersecting Region of interest's
-
-				vector<Mat> hists;
-				Mat bestROI;
-				double minBhatta = DBL_MAX;
-
-				for (Rect r : interRects) {
-					//interROIs.push_back(frame(r));
-					Mat ROI = frame(r);
-					calcHist(&ROI, 1, channels, Mat(), tempHist, 2, histSize, ranges);
-					//hists.push_back(tempHist);
-					createHist(channels, histSize, )
-						
-
-					double bhatta = compareHist(tempHist, t.getLastHist(), CV_COMP_BHATTACHARYYA);
-
-					if (bhatta < minBhatta) {
-						minBhatta = bhatta;
-						bestROI = ROI;
-							
-						//update tracker
-						t.setLastHist(tempHist);
-						t.setLastRect(r);
-					}
-				}
-				//--------------------------------------------------------------------
-					
-				//---------------CALCULATE HISTOGRAM----------------------------------
-				//--------------------TEST----------------------
-				//calcHist(&bgsub, 1, channels, Mat(), hist1, 2, histSize, ranges);
-				//calcHist(&prevBG, 1, channels, Mat(), hist2, 2, histSize, ranges);
-				//calcHist(&bgsub, 1, 0, Mat(), hist1, 1, histSize, ranges);
-				//calcHist(&prevBG, 1, 0, Mat(), hist2, 1, histSize, ranges);
-				//--------------------------------------------------------------------
 			}
 		}
 		
+		
 
-		//countors == 0
-		else {
-			//delete tracker
-			while (trackers.size() > 0) {
-				trackers.pop_back();
+		for (Tracker *t : trackers) {
+			cout << "Tracker: " << t << endl;
+
+			assert(t->processed == true);
+		}
+
+		//DEBUGGING
+		int numbertrackers = trackers.size();
+		int counter = 0;
+
+		//check if trackers shall survive
+		vector<Tracker*> tempTrackers;
+
+		while (trackers.size() > 0) {
+			counter++;
+
+			Tracker *t = trackers.back();
+
+			trackers.pop_back();
+			t->processed = false;
+			
+			if (t->survivalTest()) { 
+				tempTrackers.push_back(t); 
+				cout << t << endl;
+			}
+			else {
+				t->~Tracker();
+			}
+			
+
+		}
+
+		trackers = tempTrackers;
+
+		assert(trackers.size() == tempTrackers.size());
+		assert(counter == numbertrackers);
+
+
+		for (Tracker *t : trackers) {
+			assert(t->processed == false);
+		}
+
+
+		/*
+		Paint trackinginfo
+		*/
+		int dText = 20;
+		int trackername = 1;
+
+		int minDuration = 10;
+		int paintRectDuration = 15;
+
+		
+		for (Tracker *t : trackers) {
+			if (t->getDuration() >= minDuration) {
+				putText(colorImage, "Tracker " + to_string(trackername) + ": " + to_string(t->getDuration()), Point(20, 20 + dText), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 0), 1);
+				dText += 20;
+				trackername++;
+				
+				if (t->getDuration() > paintRectDuration) {
+					rectangle(colorImage, t->getLastBlob().getRect().tl(), t->getLastBlob().getRect().br(), Scalar(0, 0, 255), 2, 8, 0);
+				}
 			}
 
+			
 		}
+		
 
-
-		for (Tracker t : trackers) {
-			if (!t.survivalTest())
-				t.~Tracker();
-		}
-
-
-
+		namedWindow("Contours", CV_WINDOW_AUTOSIZE);
+		imshow("Contours", colorImage);
 
 		switch (waitKey(1))
 		{
@@ -222,28 +283,45 @@ int main()
 /*
 Creates blobs from rectangles
 */
-vector<Blob> createBlobs(vector<Rect> rects) {
+vector<Blob> createBlobs(vector<Rect> rects, Mat image) {
+	//--------------TESTING--------------------------------
+	int hbins = 30, sbins = 32;
+	int histSize[] = { hbins, sbins };
+	float hranges[] = { 0, 180 };
+	float sranges[] = { 0, 256 };
+	const float* ranges[] = { hranges, sranges };
+	int channels[] = { 0, 1 };
+	Mat tempHist;
+	vector<Blob> tempBlobs;
+
 	for (Rect r : rects) {
+		Mat blobROI = image.clone();
+		blobROI(r);
+
+
+		calcHist(&blobROI, 1, channels, Mat(), tempHist, 2, histSize, ranges);
+
 		
-		härejag 
-		Blob b(Mat hist, Rect rect, Mat ROI);
+		//Niklas
+		//calcHist(&bgsub, 1, channels, Mat(), hist1, 2, histSize, ranges);
+		//calcHist(&prevBG, 1, channels, Mat(), hist2, 2, histSize, ranges);
+		//calcHist(&bgsub, 1, 0, Mat(), hist1, 1, histSize, ranges);
+		//calcHist(&prevBG, 1, 0, Mat(), hist2, 1, histSize, ranges);
+
+		//Emil
+		//calcHist(&test 1, channels, Mat(), tempHist, 2, histSize, ranges);
+
+		Blob b(tempHist, r, blobROI);
+		tempBlobs.push_back(b);
+
+		imshow("debug hist", tempHist);
+
 	}
+
+	return tempBlobs;
 }
 
 
-
-/*
-Creates new trackers from given rectangles
-*/
-vector<Tracker> createTrackers(vector<Rect> rects) {
-	vector<Tracker> newTrackers;
-	
-	for (Rect r : rects) {
-		newTrackers.push_back(Tracker(r));
-	}
-
-	return newTrackers;
-}
 
 
 /*
@@ -313,8 +391,6 @@ void find(Mat binImage, vector<vector<Point>> contours)
 
 	line(colorImage, Point(colorImage.cols / 2, 0), Point(colorImage.cols / 2, colorImage.rows), Scalar(255, 0, 0), 2);
 
-	namedWindow("Contours", CV_WINDOW_AUTOSIZE);
-	imshow("Contours", colorImage);
 
 }
 
