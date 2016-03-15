@@ -11,9 +11,14 @@ Tracker::Tracker(Blob blob) {
 }
 
 Tracker::~Tracker() {
+	
+	/*
 	for (Blob b : blobvector) {
-		//delete(&b);
+		blobvector
+		delete &b;
 	}
+	*/
+
 }
 
 int Tracker::getDuration() {
@@ -40,9 +45,11 @@ void Tracker::fillWithEmptyBlob() {
 	duration++;
 }
 
-void printTracker() {
+void Tracker::printTracker() {
 	
-	//cout << "lastblob: " << this->getLastBlob() << "\t lasthist " << &Tracker::getLastHist << endl;
+	getLastBlob();
+
+	//cout << "lastblob: " << getLastBlob() << "\t lasthist " << getLastHist() << endl;
 
 }
 

@@ -40,15 +40,26 @@ int main()
 	Mat frame, prevBG, bgsub, erode, dilate, gray, temp, hist1, hist2, lastHist, tempHist, lastROI;
 	Rect lastRect;
 
+	//int imageWidth = 640;
+	//int imageHeight = 480;
+
+	int imageWidth = 530;
+	int imageHeight = 600;
+
 	Settings::loadSettings();
 
 	String video = "videoplayback2.mp4";
 	VideoCapture cap(video);
 
+	//cap.set(CV_CAP_PROP_FRAME_WIDTH, imageWidth);		Fick ej att fungera, använder resizeWindow() istället
+	//cap.set(CV_CAP_PROP_FRAME_HEIGHT, imageHeight);
+
 	if (!cap.isOpened())
 		return -1;
 
+
 	namedWindow("Window", WINDOW_AUTOSIZE);
+	namedWindow("BGS", WINDOW_AUTOSIZE);
 
 	pMOG = createBackgroundSubtractorMOG2(Settings::getA(), (((double)Settings::getB()) / 10), false);
 
@@ -69,8 +80,12 @@ int main()
 	Settings::init(&pMOG);
 
 	while (true)
-	{
+	{	
+		
 		cap >> frame;
+
+		
+
 		if (frame.empty())
 		{
 			cap.release();
@@ -88,11 +103,21 @@ int main()
 		//double val2 = compareHist(hist1, hist2, CV_COMP_INTERSECT);
 		//cout << "Bhattacharyya: " << val << "\tHellinger" << val2 << endl;
 
+		
+		imshow("BGS", bgsub);
+		resizeWindow("BGS", imageWidth, imageHeight);
+		moveWindow("BGS", imageWidth, 0);
+
 		cv::erode(bgsub, erode, Settings::getErodeElement());
 		cv::dilate(erode, dilate, Settings::getDilateElement());
 
 		imshow("Window", frame);
+		resizeWindow("Window", imageWidth, imageHeight);
+		moveWindow("Window", 0, 0);
+
 		imshow("Dilate Window", dilate);
+		resizeWindow("Dilate Window", imageWidth, imageHeight);
+		moveWindow("Dilate Window", imageWidth*2, 0);
 
 		vector<vector<Point>> contours = myFindContours(dilate);
 		vector<Rect> allRects = getAllRects(contours);
@@ -219,7 +244,7 @@ int main()
 				cout << t << endl;
 			}
 			else {
-				t->~Tracker();
+				delete t;
 			}
 			
 
@@ -248,7 +273,7 @@ int main()
 		
 		for (Tracker *t : trackers) {
 			if (t->getDuration() >= minDuration) {
-				putText(colorImage, "Tracker " + to_string(trackername) + ": " + to_string(t->getDuration()), Point(20, 20 + dText), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 0), 1);
+				putText(colorImage, "Tracker " + to_string(trackername) + ": Number detections " + to_string(t->getDuration()), Point(20, 20 + dText), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 0), 1);
 				dText += 20;
 				trackername++;
 				
@@ -261,8 +286,14 @@ int main()
 		}
 		
 
+		
 		namedWindow("Contours", CV_WINDOW_AUTOSIZE);
 		imshow("Contours", colorImage);
+		resizeWindow("Contours", imageWidth, imageHeight);
+		moveWindow("Contours", imageWidth, 0);
+		
+
+
 
 		switch (waitKey(1))
 		{
