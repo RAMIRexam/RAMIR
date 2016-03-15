@@ -10,6 +10,7 @@ Emil Andersson and Niklas Schedin
 #include <Windows.h>
 #include "Settings.hpp"
 #include "Tracker.hpp"
+#include "MyWindows.hpp"
 
 #include <opencv2\core.hpp>
 #include <opencv2\opencv.hpp>
@@ -40,13 +41,9 @@ int main()
 	Mat frame, prevBG, bgsub, erode, dilate, gray, temp, hist1, hist2, lastHist, tempHist, lastROI;
 	Rect lastRect;
 
-	//int imageWidth = 640;
-	//int imageHeight = 480;
-
-	int imageWidth = 530;
-	int imageHeight = 600;
-
 	Settings::loadSettings();
+
+	MyWindows windows(1500);
 
 	String video = "videoplayback2.mp4";
 	VideoCapture cap(video);
@@ -60,6 +57,7 @@ int main()
 
 	namedWindow("Window", WINDOW_AUTOSIZE);
 	namedWindow("BGS", WINDOW_AUTOSIZE);
+	namedWindow("Contours", CV_WINDOW_AUTOSIZE);
 
 	pMOG = createBackgroundSubtractorMOG2(Settings::getA(), (((double)Settings::getB()) / 10), false);
 
@@ -103,21 +101,15 @@ int main()
 		//double val2 = compareHist(hist1, hist2, CV_COMP_INTERSECT);
 		//cout << "Bhattacharyya: " << val << "\tHellinger" << val2 << endl;
 
-		
-		imshow("BGS", bgsub);
-		resizeWindow("BGS", imageWidth, imageHeight);
-		moveWindow("BGS", imageWidth, 0);
+		windows.feedImages("BGS", bgsub);
 
 		cv::erode(bgsub, erode, Settings::getErodeElement());
 		cv::dilate(erode, dilate, Settings::getDilateElement());
 
-		imshow("Window", frame);
-		resizeWindow("Window", imageWidth, imageHeight);
-		moveWindow("Window", 0, 0);
+		
+		windows.feedImages("Windows", frame);
+		windows.feedImages("Dilate Window", dilate);
 
-		imshow("Dilate Window", dilate);
-		resizeWindow("Dilate Window", imageWidth, imageHeight);
-		moveWindow("Dilate Window", imageWidth*2, 0);
 
 		vector<vector<Point>> contours = myFindContours(dilate);
 		vector<Rect> allRects = getAllRects(contours);
@@ -286,12 +278,8 @@ int main()
 		}
 		
 
-		
-		namedWindow("Contours", CV_WINDOW_AUTOSIZE);
-		imshow("Contours", colorImage);
-		resizeWindow("Contours", imageWidth, imageHeight);
-		moveWindow("Contours", imageWidth, 0);
-		
+		windows.feedImages("Contours", colorImage);
+		windows.showImages();
 
 
 
@@ -344,6 +332,7 @@ vector<Blob> createBlobs(vector<Rect> rects, Mat image) {
 
 		Blob b(tempHist, r, blobROI);
 		tempBlobs.push_back(b);
+		
 
 		imshow("debug hist", tempHist);
 

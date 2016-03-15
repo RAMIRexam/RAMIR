@@ -17,15 +17,22 @@ using namespace std;
 class MyWindows {
 
 public:
-	MyWindows::MyWindows();
+	MyWindows(int windowWidth);
 	~MyWindows();
 
+	static void feedImages(String name, Mat image);
+	static void showImages();
 
 private:
-	void addWindow(String name);
-	void showWindows();
 	
-	vector<String> windows;
+
+	static vector<Mat> images;
+	static vector<String> imageNames;
+
+	static int imageHeight;
+	static int imageWidth;
+
+	static int windowWidth;
 
 
 };

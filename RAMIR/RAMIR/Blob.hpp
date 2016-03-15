@@ -17,7 +17,7 @@ class Blob {
 public:
 
 	Blob(Mat hist, Rect rect, Mat ROI);
-	Blob::Blob();							//create emptyblob
+	Blob();							//create emptyblob
 	~Blob();
 
 	Rect getRect();
