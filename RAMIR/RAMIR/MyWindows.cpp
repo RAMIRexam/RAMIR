@@ -8,7 +8,7 @@
 
 /****************   C O N S T R U C T O R S   ***************/
 MyWindows::MyWindows(int windowWidth) {						
-	imageWidth = 530;		//640							
+	imageWidth = 800;		//640							
 	imageHeight = 600;		//480							
 															
 	//windowWidth = 1500;//?								

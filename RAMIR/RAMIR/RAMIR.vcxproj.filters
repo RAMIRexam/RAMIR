@@ -41,7 +41,10 @@
     <Text Include="Information.txt">
       <Filter>Resource Files</Filter>
     </Text>
-    <Text Include="pseudocode_main.txt">
+    <Text Include="pseudocode_tracking.txt">
+      <Filter>Source Files</Filter>
+    </Text>
+    <Text Include="pseudocode_counting.txt">
       <Filter>Source Files</Filter>
     </Text>
   </ItemGroup>

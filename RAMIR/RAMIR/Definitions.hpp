@@ -1,0 +1,9 @@
+#ifndef DEFINITIONS_HPP
+#define DEFINITIONS_HPP
+
+//Used to tell which a object is closest
+#define ENTRY_DOOR	1
+#define	EXIT_DOOR	2
+
+
+#endif

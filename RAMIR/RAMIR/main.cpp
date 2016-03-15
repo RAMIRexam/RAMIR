@@ -24,12 +24,15 @@ using namespace std;
 Ptr<BackgroundSubtractor> pMOG;
 Mat colorImage;
 
+int verticalEelinePos; //vertical entry/exit-line position
+
 
 void find(Mat binImage, vector<vector<Point>> contours);
 vector<vector<Point>> myFindContours(Mat src);
 vector<Rect> getAllRects(vector<vector<Point>> contours);
 vector<Blob> createBlobs(vector<Rect> rects, Mat image);
 vector<Tracker*> tracking(vector<Blob> blobs);
+void paintTrackerinfo();
 
 vector<Tracker*> trackers;
 vector<Tracker> alreadyCountedTrackers;
@@ -44,7 +47,7 @@ int main()
 
 	Settings::loadSettings();
 
-	MyWindows windows(1500);
+	MyWindows windows(1500);	//Used to handle image-representation. Argument = screenWidth
 
 	String video = "videoplayback2.mp4";
 	VideoCapture cap(video);
@@ -82,6 +85,7 @@ int main()
 	{	
 		
 		cap >> frame;
+		verticalEelinePos = frame.cols / 2;
 
 		if (frame.empty())
 		{
@@ -118,9 +122,9 @@ int main()
 		trackers = tracking(blobs);									//tracks the blobs
 		
 		
-		trackers = countTrackerCheck(trackers);
+		//trackers = countTrackerCheck(trackers);
 
-		paintTrackerinfo(trackers);									//prints info about all detected trackers in the image
+		paintTrackerinfo();									//prints info about all detected trackers in the image
 		
 		
 		
@@ -149,7 +153,7 @@ int main()
 /*
 Paints info about the trackers
 */
-void printTrackerinfo() {
+void paintTrackerinfo() {
 	
 	int dText = 20;
 	int trackername = 1;
@@ -426,7 +430,7 @@ void find(Mat binImage, vector<vector<Point>> contours)
 		ellipse(colorImage, p, Size(40, 40), 0, 0, 360, Scalar(0, 255, 0), 1);
 	}
 
-	line(colorImage, Point(colorImage.cols / 2, 0), Point(colorImage.cols / 2, colorImage.rows), Scalar(255, 0, 0), 2);
+	line(colorImage, Point(verticalEelinePos, 0), Point(verticalEelinePos, colorImage.rows), Scalar(255, 0, 0), 2);
 
 
 }

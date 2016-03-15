@@ -155,7 +155,8 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="Information.txt" />
-    <Text Include="pseudocode_main.txt" />
+    <Text Include="pseudocode_counting.txt" />
+    <Text Include="pseudocode_tracking.txt" />
     <Text Include="Settings.txt" />
   </ItemGroup>
   <ItemGroup>

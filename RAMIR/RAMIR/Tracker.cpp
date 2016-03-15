@@ -1,13 +1,31 @@
 #include "Tracker.hpp"
+#include "Definitions.hpp"
 
+/*
+________________________________
+|				|				|
+|				|				|
+|entrypos		|vertical		|exitPos
+|				|eeline			|
+|				|pos			|
+|_______________|_______________|
 
-
-Tracker::Tracker(Blob blob) {
+*/
+Tracker::Tracker(Blob blob, int blobCenter, int entryPos, int exitPos) {
 	fillWithBlob(blob);
 	duration = 1;
 	processed = true;
 	fullTrackerLife = 2;
 	trackerLife = fullTrackerLife;
+
+	int lEntry = blobCenter - entryPos;					//Length to entry
+	int lExit = exitPos - blobCenter;					//Length to exit
+
+	assert(lEntry > 0 && lExit > 0);
+
+	if (lEntry < lExit) { startDoor = ENTRY_DOOR; }	//Used to 
+	else				{ startDoor = EXIT_DOOR; }
+
 }
 
 Tracker::~Tracker() {

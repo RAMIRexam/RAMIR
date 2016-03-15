@@ -19,7 +19,7 @@ class Tracker {
 
 public:
 
-	Tracker(Blob blob);
+	Tracker(Blob blob, int verticalEelinePos, int entryPos, int exitPos);
 	~Tracker();
 
 	int getDuration();
@@ -28,6 +28,8 @@ public:
 	void fillWithBlob(Blob b);
 	void fillWithEmptyBlob();
 	void printTracker();
+
+	void getLineSide(Blob b);//?
 
 
 	bool processed;					//true if the tracker is processed this iteration
@@ -38,6 +40,8 @@ private:
 	int duration;
 	int fullTrackerLife;
 	int trackerLife;
+
+	int startDoor;
 };
 
 #endif // !SETTINGS_HPP
