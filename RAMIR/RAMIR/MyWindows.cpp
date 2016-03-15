@@ -1,17 +1,17 @@
 #include "MyWindows.hpp"
 /*
 (1) Feed images with feedImage()
-(2) Show images with showImages() - this deletes the fed images
+(2) Show images with showImages() - this deletes the fed images for next iteration
 
 */
 
 
 /****************   C O N S T R U C T O R S   ***************/
-MyWindows::MyWindows(int windowWidth) {
-	imageWidth = 530;		//640
-	imageHeight = 600;		//480
-
-	//windowWidth = 1500;//?
+MyWindows::MyWindows(int windowWidth) {						
+	imageWidth = 530;		//640							
+	imageHeight = 600;		//480							
+															
+	//windowWidth = 1500;//?								
 }
 
 MyWindows::~MyWindows() {
