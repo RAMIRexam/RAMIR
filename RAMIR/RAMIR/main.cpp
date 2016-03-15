@@ -116,8 +116,16 @@ int main()
 
 		find(dilate, contours);										//finds the centroid (not used in tracking())
 		trackers = tracking(blobs);									//tracks the blobs
-		paintTrackerinfo(trackers);									//prints info about all detected trackers in the image
+		/*
+		for (Tracker t : trackers) {
+			if(t has past eeline)
+		}
+		*/
+		
+		trackers = countTrackerCheck(trackers);
 
+		paintTrackerinfo(trackers);									//prints info about all detected trackers in the image
+		
 		
 		
 

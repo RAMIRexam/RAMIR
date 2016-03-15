@@ -1,0 +1,39 @@
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+This Pseudocode demonstrates how a blob will be counted.
+
+when a blob first is detected it is added to a new tracker.
+
+
+MISSION
+	(1) add a function that decides which side of the entry/exit-line (eeline) the blob is on
+	(2) add to tracker which side of the eeline the blob was first detected
+	(3) add countPersonCheck() - checks if the blob has moved over the eeline
+	(4) deal with the fact that a tracker can be placed in the ACtracker
+
+
+Emil A
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+vector<Tracker> ACtrackers;					//Already Counted Trackers
+
+trackers = tracking(blobs);					//(2)
+countBlobsCheck();							//Has one or more blobs that are tracked passed the eeline and shall be counted?
+
+
+/*
+Has one or more blobs that are tracked passed the eeline and shall be counted?
+*/
+void countBlobsCheck(vector<Tracker> trackers){
+	for (Tracker t : trackers) {
+	if(t.countPersonCheck()){
+		//move tracker to ACtrackers
+	}
+}
+
+
+paintTrackerinfo(trackers);									//prints info about all detected trackers in the image
+		
+		
