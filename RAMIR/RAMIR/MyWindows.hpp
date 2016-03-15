@@ -33,8 +33,6 @@ private:
 	int imageWidth;
 
 	int windowWidth;
-
-
 };
 
 #endif
