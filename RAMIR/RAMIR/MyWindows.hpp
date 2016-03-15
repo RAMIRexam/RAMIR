@@ -20,19 +20,19 @@ public:
 	MyWindows(int windowWidth);
 	~MyWindows();
 
-	static void feedImages(String name, Mat image);
-	static void showImages();
+	void feedImages(String name, Mat image);
+	void showImages();
 
 private:
 	
 
-	static vector<Mat> images;
-	static vector<String> imageNames;
+	vector<Mat> images;
+	vector<String> imageNames;
 
-	static int imageHeight;
-	static int imageWidth;
+	int imageHeight;
+	int imageWidth;
 
-	static int windowWidth;
+	int windowWidth;
 
 
 };

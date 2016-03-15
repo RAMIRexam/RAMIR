@@ -118,6 +118,14 @@ int main()
 		//finds the centroid
 		find(dilate, contours);
 		
+		/******Tracking**********************
+		/	
+		/	Trackers will be filled with blobs. One blob for each image
+		/	if a tracker cannot find a blob that matches the tracker, it will be filled with a "emptyblob"
+		/	
+		/	
+		/	
+		************************************/
 		if (trackers.size() == 0) {
 			/*
 			No trackers exists. All blobs will turn to a tracker

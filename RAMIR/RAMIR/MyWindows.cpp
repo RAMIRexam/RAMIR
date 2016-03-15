@@ -11,7 +11,6 @@ MyWindows::MyWindows(int windowWidth) {
 	imageWidth = 530;		//640
 	imageHeight = 600;		//480
 
-
 	//windowWidth = 1500;//?
 }
 
