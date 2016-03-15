@@ -62,18 +62,6 @@ int main()
 	pMOG = createBackgroundSubtractorMOG2(Settings::getA(), (((double)Settings::getB()) / 10), false);
 
 
-	//--------------TESTING--------------------------------
-	int hbins = 30, sbins = 32;
-	int histSize[] = { hbins, sbins };
-	float hranges[] = { 0, 180 };
-	float sranges[] = { 0, 256 };
-	const float* ranges[] = { hranges, sranges };
-	int channels[] = { 0, 1 };
-
-	cap >> frame; //TESTING!
-	pMOG->apply(frame, bgsub); //TESTING!
-	//------------------------------------------------------
-
 
 	Settings::init(&pMOG);
 
