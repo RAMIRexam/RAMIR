@@ -116,11 +116,7 @@ int main()
 
 		find(dilate, contours);										//finds the centroid (not used in tracking())
 		trackers = tracking(blobs);									//tracks the blobs
-		/*
-		for (Tracker t : trackers) {
-			if(t has past eeline)
-		}
-		*/
+		
 		
 		trackers = countTrackerCheck(trackers);
 

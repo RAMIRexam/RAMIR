@@ -1,18 +1,18 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-This Pseudocode demonstrates how a blob will be counted.
-
-when a blob first is detected it is added to a new tracker.
-
-
-MISSION
-	(1) add a function that decides which side of the entry/exit-line (eeline) the blob is on
-	(2) add to tracker which side of the eeline the blob was first detected
-	(3) add countPersonCheck() - checks if the blob has moved over the eeline
-	(4) deal with the fact that a tracker can be placed in the ACtracker
-
-
-Emil A
+//This Pseudocode demonstrates how a blob will be counted.
+//
+//when a blob first is detected it is added to a new tracker.
+//
+//
+//MISSION
+//	(1) getLineSide(Blob)			add a function that decides which side of the entry/exit-line (eeline) the blob is on
+//	(2) int detectionSide			add to tracker which side of the eeline the blob was first detected
+//	(3) countPersonCheck()			checks if the blob has moved over the eeline
+//	(4)	if(t is in ACtracker)		deal with the fact that a tracker can be placed in the ACtracker
+//
+//
+//Emil A
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
