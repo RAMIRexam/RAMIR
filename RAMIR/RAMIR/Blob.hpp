@@ -1,3 +1,17 @@
+﻿/*
+A blob is an object in the scene, probably a human. A blob is a vector of points that
+defines where the blob is.
+
+________________________________
+|				|				|
+|  ▓▓			|				|
+|  ▓▓▓<--blob   |				|
+|   ▓			|				|
+|				|				|
+|_______________|_______________|
+
+*/
+
 #pragma once
 #ifndef BLOB_HPP
 #define BLOB_HPP
@@ -16,7 +30,7 @@ class Blob {
 
 public:
 
-	Blob(Mat hist, Rect rect, Mat ROI);
+	Blob(Mat hist, Rect rect, Mat ROI, Point2f cent);
 	Blob();							//create emptyblob
 	~Blob();
 
@@ -26,6 +40,9 @@ public:
 	void setROI(Mat ROI);
 	Mat getHist();
 	void setHist(Mat hist);
+	Point2f getCent();
+	void setCent(Point2f cent);
+	
 
 
 	bool emptyBlob;							//true if this is a emptyblob used for filling the blobvector in tracking
@@ -34,6 +51,7 @@ private:
 	Mat hist;
 	Mat ROI;
 	Rect rect;
+	Point2f centroid;
 
 
 };

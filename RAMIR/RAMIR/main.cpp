@@ -110,29 +110,26 @@ int main()
 		cv::erode(bgsub, erode, Settings::getErodeElement());
 		cv::dilate(erode, dilate, Settings::getDilateElement());
 
+		vector<vector<Point>> contours = myFindContours(dilate);		//function uses findContours() to get all contours in the image
+		vector<Blob> blobs = createBlobs(frame, contours);				//create blobs (ROI, RECT, HIST) from all rects
+
+		trackers = tracking(blobs);										//tracks the blobs
+		countTrackers();												//moves tracker objects from trackers to ACTrackers if they has passed the eeline
+		paintTrackerinfo();												//prints info about all detected trackers in the image
+		
+
 		
 		windows.feedImages("Windows", frame);
 		windows.feedImages("Dilate Window", dilate);
-
-
-		vector<vector<Point>> contours = myFindContours(dilate);		//uses findContours() to get all contours in the image
-		vector<Rect> allRects = getAllRects(contours);					//gets all rects from all contrours
-		vector<Blob> blobs = createBlobs(allRects, frame, dilate, contours);	//creates blobs (ROI, RECT, HIST) from all rects
-
-		
-		trackers = tracking(blobs);										//tracks the blobs
-		
-		countTrackers();												//moves tracker objects from trackers to ACTrackers if they has passed the eeline
-
-		paintTrackerinfo();												//prints info about all detected trackers in the image
-		
-		
-		
-
 		windows.feedImages("Contours", colorImage);
 		windows.showImages();
 
 
+		//Paint entry/exit-line
+		line(colorImage, Point(verticalEelinePos, 0), Point(verticalEelinePos, colorImage.rows), Scalar(255, 0, 0), 2);
+		
+		//Paint centroid
+		//ellipse(colorImage, p, Size(40, 40), 0, 0, 360, Scalar(0, 255, 0), 1);
 
 		switch (waitKey(1))
 		{
@@ -367,51 +364,76 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 }
 
 
-/*
-Creates blobs from rectangles
-*/
-vector<Blob> createBlobs(vector<Rect> rects, Mat image, vector<Point> contours) {
-	/*******************************************************************
-	/Testcode for calculating histograms
+/**************************************************************************************************************************************
+/INFO
+/
+/   Calculates a bounding rectangle for a blob from its contour
+/	Calculates a ROI at the rectangles spot
+/	Calculates a histogram at the ROI
+/	Calculates the centroid for a blob from its contour
+/	
+/
+/ARGUMENTS
+/
+/	Mat image =							original color image
+/	vector<vector<Point>> contours =	points that define blobs location
+/	
+**************************************************************************************************************************************/
+vector<Blob> createBlobs(Mat image, vector<vector<Point>> contours) {
+	/*
+	/	Tests:
+	/		(1) the rectangles height and width must be greater than 0
 	/
-	//Niklas
-	//calcHist(&bgsub, 1, channels, Mat(), hist1, 2, histSize, ranges);
-	//calcHist(&prevBG, 1, channels, Mat(), hist2, 2, histSize, ranges);
-	//calcHist(&bgsub, 1, 0, Mat(), hist1, 1, histSize, ranges);
-	//calcHist(&prevBG, 1, 0, Mat(), hist2, 1, histSize, ranges);
-	/
-	//Emil
-	//calcHist(&test 1, channels, Mat(), tempHist, 2, histSize, ranges);
-	/
-	********************************************************************/
-	
-	
+	*/
 
-	//--------------TESTING--------------------------------
+
+	//These parameters are taken from an example code
+	//------------------------------------------------------
 	int hbins = 30, sbins = 32;
 	int histSize[] = { hbins, sbins };
 	float hranges[] = { 0, 180 };
 	float sranges[] = { 0, 256 };
 	const float* ranges[] = { hranges, sranges };
 	int channels[] = { 0, 1 };
-	Mat tempHist;
-	vector<Blob> tempBlobs;
-
-	for (Rect r : rects) {
-		Mat blobROI = image.clone();
-		blobROI(r);
+	Mat hist;
+	vector<Blob> blobs;
+	//------------------------------------------------------
 
 
-		calcHist(&blobROI, 1, channels, Mat(), tempHist, 2, histSize, ranges);
 
-		
+	//Calculate blob data
+	for (vector<Point> cont : contours) {
 		
 
-		Blob b(tempHist, r, blobROI);
-		tempBlobs.push_back(b);
+
+		//calculates a bounding rectangle around the contour
+		Rect rect = boundingRect(cont);
+		assert(rect.width > 0 && rect.height > 0);							//(1) DEBUG 
+
+
+		//Creates a ROI on same spot as the rectangle
+		Mat blobROI = image.clone();											
+		blobROI(rect);
+
+
+		//Calculates the histogram for the ROI
+		calcHist(&blobROI, 1, channels, Mat(), hist, 2, histSize, ranges);
+
+
+		//Find the centroid at the contour
+		Moments m = moments(cont, false);									
+		Point2f cent = Point2f(m.m10 / m.m00, m.m01 / m.m00);
+
+
+
+
+		//Finally create the blob
+		Blob b(hist, rect, blobROI, cent);
+		blobs.push_back(b);
+
 	}
 
-	return tempBlobs;
+	return blobs;
 }
 
 
@@ -449,10 +471,12 @@ vector<vector<Point>> myFindContours(Mat src) {
 }
 
 
+
+
+/*
 RNG rng(12345);
 void findCentroid(Mat binImage, vector<vector<Point>> contours)
 {
-
 	cvtColor(binImage, colorImage, CV_GRAY2BGR, 3);
 
 	vector<Moments> mu;
@@ -466,25 +490,20 @@ void findCentroid(Mat binImage, vector<vector<Point>> contours)
 	}
 
 
-
-
 	vector<Point2f> mc;
 	for (Moments m : mu)
 	{
 		mc.push_back(Point2f(m.m10 / m.m00, m.m01 / m.m00));
 	}
 
-
-
-	
 	for (Point2f p : mc)
 	{
 		ellipse(colorImage, p, Size(40, 40), 0, 0, 360, Scalar(0, 255, 0), 1);
 	}
-
-	line(colorImage, Point(verticalEelinePos, 0), Point(verticalEelinePos, colorImage.rows), Scalar(255, 0, 0), 2);
+	
 
 
 }
 
 
+*/

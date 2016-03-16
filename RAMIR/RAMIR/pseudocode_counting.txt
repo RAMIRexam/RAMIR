@@ -19,7 +19,7 @@
 //									[] - 
 //
 //	(5)	blob.getCentroid()		 	Make it possible to reach a blobs centroid from the object
-//									[] - 
+//									[CHECK] - getCent() returns the centroid
 //
 //
 //Emil A

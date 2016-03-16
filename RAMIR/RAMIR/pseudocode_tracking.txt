@@ -104,3 +104,18 @@ Tracker *t = new Tracker(b);
 	cout << &t << endl; - returnerar inte samma saker!
 	cout << t << endl;
 */
+
+
+/*******************************************************************
+	/Testcode for calculating histograms
+	/
+	//Niklas
+	//calcHist(&bgsub, 1, channels, Mat(), hist1, 2, histSize, ranges);
+	//calcHist(&prevBG, 1, channels, Mat(), hist2, 2, histSize, ranges);
+	//calcHist(&bgsub, 1, 0, Mat(), hist1, 1, histSize, ranges);
+	//calcHist(&prevBG, 1, 0, Mat(), hist2, 1, histSize, ranges);
+	/
+	//Emil
+	//calcHist(&test 1, channels, Mat(), tempHist, 2, histSize, ranges);
+	/
+	********************************************************************/

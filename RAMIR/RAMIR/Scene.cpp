@@ -35,13 +35,13 @@ Scene::~Scene() {
 
 
 //Line-side check, checks on which side of the line an object is
-int LSCheck(Tracker t) {
+int Scene::LSCheck(Tracker t) {
 	Blob b = t.getLastBlob();
-	Point p = b.getCentroid();
+	Point2f p = b.getCent();
 	int blobx = p.x;
 	int bloby = p.y;
 
-	assert(sx == ex);
+	//assert(sx == 6);
 
 	if (blobx - sx < 0) {
 		return LEFTSIDE_OFLINE;				//if blob is on the left side
