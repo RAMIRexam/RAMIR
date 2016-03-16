@@ -15,9 +15,11 @@
 //	(3) countPersonCheck()			checks if the blob has moved over the eeline
 //									[CHECK] - not a method, just compare staSOL and curSOL
 //
-//	(4)	if(t is in ACtracker)	 	deal with the fact that a tracker can be placed in the ACtracker
+//	(4)	if(t is in ACtracker()	 	deal with the fact that a tracker can be placed in the ACtracker
 //									[] - 
 //
+//	(5)	blob.getCentroid()		 	Make it possible to reach a blobs centroid from the object
+//									[] - 
 //
 //
 //Emil A

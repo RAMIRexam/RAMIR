@@ -27,6 +27,7 @@ public:
 	Mat getHist();
 	void setHist(Mat hist);
 
+
 	bool emptyBlob;							//true if this is a emptyblob used for filling the blobvector in tracking
 
 private:

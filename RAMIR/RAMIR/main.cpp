@@ -27,7 +27,7 @@ Mat colorImage;
 int verticalEelinePos; //vertical entry/exit-line position
 
 
-void find(Mat binImage, vector<vector<Point>> contours);
+void findCentroid(Mat binImage, vector<vector<Point>> contours);
 vector<vector<Point>> myFindContours(Mat src);
 vector<Rect> getAllRects(vector<vector<Point>> contours);
 vector<Blob> createBlobs(vector<Rect> rects, Mat image);
@@ -115,16 +115,16 @@ int main()
 		windows.feedImages("Dilate Window", dilate);
 
 
-		vector<vector<Point>> contours = myFindContours(dilate);	//uses findContours() to get all contours in the image
-		vector<Rect> allRects = getAllRects(contours);				//gets all rects from all contrours
-		vector<Blob> blobs = createBlobs(allRects, frame);			//creates blobs (ROI, RECT, HIST) from all rects
+		vector<vector<Point>> contours = myFindContours(dilate);		//uses findContours() to get all contours in the image
+		vector<Rect> allRects = getAllRects(contours);					//gets all rects from all contrours
+		vector<Blob> blobs = createBlobs(allRects, frame, dilate, contours);	//creates blobs (ROI, RECT, HIST) from all rects
 
-		find(dilate, contours);										//finds the centroid (not used in tracking())
-		trackers = tracking(blobs);									//tracks the blobs
 		
-		countTrackers();											//moves tracker objects from trackers to ACTrackers if they has passed the eeline
+		trackers = tracking(blobs);										//tracks the blobs
+		
+		countTrackers();												//moves tracker objects from trackers to ACTrackers if they has passed the eeline
 
-		paintTrackerinfo();											//prints info about all detected trackers in the image
+		paintTrackerinfo();												//prints info about all detected trackers in the image
 		
 		
 		
@@ -370,7 +370,23 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 /*
 Creates blobs from rectangles
 */
-vector<Blob> createBlobs(vector<Rect> rects, Mat image) {
+vector<Blob> createBlobs(vector<Rect> rects, Mat image, vector<Point> contours) {
+	/*******************************************************************
+	/Testcode for calculating histograms
+	/
+	//Niklas
+	//calcHist(&bgsub, 1, channels, Mat(), hist1, 2, histSize, ranges);
+	//calcHist(&prevBG, 1, channels, Mat(), hist2, 2, histSize, ranges);
+	//calcHist(&bgsub, 1, 0, Mat(), hist1, 1, histSize, ranges);
+	//calcHist(&prevBG, 1, 0, Mat(), hist2, 1, histSize, ranges);
+	/
+	//Emil
+	//calcHist(&test 1, channels, Mat(), tempHist, 2, histSize, ranges);
+	/
+	********************************************************************/
+	
+	
+
 	//--------------TESTING--------------------------------
 	int hbins = 30, sbins = 32;
 	int histSize[] = { hbins, sbins };
@@ -389,19 +405,10 @@ vector<Blob> createBlobs(vector<Rect> rects, Mat image) {
 		calcHist(&blobROI, 1, channels, Mat(), tempHist, 2, histSize, ranges);
 
 		
-		//Niklas
-		//calcHist(&bgsub, 1, channels, Mat(), hist1, 2, histSize, ranges);
-		//calcHist(&prevBG, 1, channels, Mat(), hist2, 2, histSize, ranges);
-		//calcHist(&bgsub, 1, 0, Mat(), hist1, 1, histSize, ranges);
-		//calcHist(&prevBG, 1, 0, Mat(), hist2, 1, histSize, ranges);
-
-		//Emil
-		//calcHist(&test 1, channels, Mat(), tempHist, 2, histSize, ranges);
+		
 
 		Blob b(tempHist, r, blobROI);
 		tempBlobs.push_back(b);
-		
-
 	}
 
 	return tempBlobs;
@@ -443,7 +450,7 @@ vector<vector<Point>> myFindContours(Mat src) {
 
 
 RNG rng(12345);
-void find(Mat binImage, vector<vector<Point>> contours)
+void findCentroid(Mat binImage, vector<vector<Point>> contours)
 {
 
 	cvtColor(binImage, colorImage, CV_GRAY2BGR, 3);
