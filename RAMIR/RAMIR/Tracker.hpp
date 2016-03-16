@@ -6,6 +6,7 @@
 #include <sstream>
 #include <iostream>
 #include "Blob.hpp"
+#include "Definitions.hpp"
 
 #include <opencv2\core.hpp>
 #include <opencv2\highgui.hpp>
@@ -29,8 +30,10 @@ public:
 	void fillWithEmptyBlob();
 	void printTracker();
 
-	void getLineSide(Blob b);//?
+	
 
+	int curSOL;						//current Side Of Line, which side of the line the object currently is
+	int staSOL;						//start Side Of Line, which side of the line the object was when it was first detected
 
 	bool processed;					//true if the tracker is processed this iteration
 
@@ -41,7 +44,7 @@ private:
 	int fullTrackerLife;
 	int trackerLife;
 
-	int startDoor;
+	
 };
 
 #endif // !SETTINGS_HPP

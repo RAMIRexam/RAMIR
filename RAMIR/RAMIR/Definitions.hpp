@@ -5,5 +5,8 @@
 #define ENTRY_DOOR	1
 #define	EXIT_DOOR	2
 
+#define LEFTSIDE_OFLINE 3
+#define RIGHTSIDE_OFLINE 4
+
 
 #endif

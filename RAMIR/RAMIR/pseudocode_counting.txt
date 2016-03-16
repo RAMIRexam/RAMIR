@@ -6,10 +6,18 @@
 //
 //
 //MISSION
-//	(1) getLineSide(Blob)			add a function that decides which side of the entry/exit-line (eeline) the blob is on
-//	(2) int detectionSide			add to tracker which side of the eeline the blob was first detected
+//	(1) LSCheck(Tracker)			add a function that decides which side of the entry/exit-line (eeline) the blob is on
+//									[] - 
+//
+//	(2) int staSOL					add to tracker which side of the eeline the blob was first detected (startside of line)
+//									[CHECK] - staSOL and curSOL.
+//
 //	(3) countPersonCheck()			checks if the blob has moved over the eeline
-//	(4)	if(t is in ACtracker)		deal with the fact that a tracker can be placed in the ACtracker
+//									[CHECK] - not a method, just compare staSOL and curSOL
+//
+//	(4)	if(t is in ACtracker)	 	deal with the fact that a tracker can be placed in the ACtracker
+//									[] - 
+//
 //
 //
 //Emil A

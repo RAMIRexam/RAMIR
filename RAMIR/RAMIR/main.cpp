@@ -32,10 +32,11 @@ vector<vector<Point>> myFindContours(Mat src);
 vector<Rect> getAllRects(vector<vector<Point>> contours);
 vector<Blob> createBlobs(vector<Rect> rects, Mat image);
 vector<Tracker*> tracking(vector<Blob> blobs);
+void countPersonCheck();
 void paintTrackerinfo();
 
-vector<Tracker*> trackers;
-vector<Tracker> alreadyCountedTrackers;
+vector<Tracker*> trackers;									//Contains trackers which hasn't been counted yet.
+vector<Tracker*> ACTrackers;									//Already counted trackers. When a tracker is counted it shall be moved from trackers to this vector
 
 bool paintRect = true;
 
@@ -121,10 +122,9 @@ int main()
 		find(dilate, contours);										//finds the centroid (not used in tracking())
 		trackers = tracking(blobs);									//tracks the blobs
 		
-		
-		//trackers = countTrackerCheck(trackers);
+		countTrackers();											//moves tracker objects from trackers to ACTrackers if they has passed the eeline
 
-		paintTrackerinfo();									//prints info about all detected trackers in the image
+		paintTrackerinfo();											//prints info about all detected trackers in the image
 		
 		
 		
@@ -150,9 +150,9 @@ int main()
 	return 0;
 }
 
-/*
-Paints info about the trackers
-*/
+/**************************************************************************************************************************************
+/	Paints how many times the trackers have found their blobs in the upper left corner
+**************************************************************************************************************************************/
 void paintTrackerinfo() {
 	
 	int dText = 20;
@@ -172,18 +172,63 @@ void paintTrackerinfo() {
 				rectangle(colorImage, t->getLastBlob().getRect().tl(), t->getLastBlob().getRect().br(), Scalar(0, 0, 255), 2, 8, 0);
 			}
 		}
-
-
 	}
 }
+/**************************************************************************************************************************************
+/	Checks whether a person shall be counted (moved from trackers to ACTrackers)
+/	Counts the person if it has moved from the sSOL (start side of line) to the other side.
+**************************************************************************************************************************************/
+void countTrackers() {
+/*
+/	Tests:
+/		(1) tracker.size in == tracker.size out
+/		(2) number of trackers in (trackers + ACtrackers) == number trackers out (trackers + ACtrackers)
+/
+*/
+	
+	int nTrackers_DEBUG = trackers.size() + ACTrackers.size();		//(2) DEBUG
 
-/******Tracking**********************
-/
-/	Trackers will be filled with blobs. One blob for each image
+
+	if (trackers.size() > 0) {										//(1) DEBUG, used to check so trackers is'nt 0 at end
+		vector<Tracker*> tempTrackers;
+
+		while (trackers.size() > 0) {
+			Tracker* t = trackers.back();
+			trackers.pop_back();
+
+			if (t->curSOL != t->staSOL) {
+				ACTrackers.push_back(t);
+			}
+			else {
+				tempTrackers.push_back(t);
+			}
+
+			//BUG, FOLOWING REPLACED WITH ABOVE. CANT USE FUNCTIONCALLS IN RESULT...
+			//if (t->curSOL != t->staSOL ? ACtrackers.push_back(t) : tempTrackers.push_back(t));
+		}
+
+		trackers = tempTrackers;
+
+		assert(trackers.size() != 0);								//(1) DEBUG
+	}
+
+	assert(nTrackers_DEBUG == trackers.size() + ACTrackers.size());	//(2) DEBUG
+
+}
+
+
+/**************************************************************************************************************************************
+/	Trackers will be filled with blobs, one blob for each image.
 /	if a tracker cannot find a blob that matches the tracker, it will be filled with a "emptyblob"
-/
-************************************/
+**************************************************************************************************************************************/
 vector<Tracker*> tracking(vector<Blob> blobs) {
+/*
+/	Tests:
+/		(1) 
+/		(2) 
+/
+*/
+
 	if (trackers.size() == 0) {
 		/*
 		No trackers exists. All blobs will turn to a tracker

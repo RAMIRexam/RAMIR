@@ -1,5 +1,4 @@
 #include "Tracker.hpp"
-#include "Definitions.hpp"
 
 /*
 ________________________________
@@ -23,8 +22,7 @@ Tracker::Tracker(Blob blob, int blobCenter, int entryPos, int exitPos) {
 
 	assert(lEntry > 0 && lExit > 0);
 
-	if (lEntry < lExit) { startDoor = ENTRY_DOOR; }	//Used to 
-	else				{ startDoor = EXIT_DOOR; }
+	if (lEntry < lExit ? startDoor = ENTRY_DOOR : startDoor = EXIT_DOOR);	//Used to 
 
 }
 
@@ -36,6 +34,11 @@ Tracker::~Tracker() {
 		delete &b;
 	}
 	*/
+
+}
+
+//Closest door check
+void CDCheck(Blob b) {
 
 }
 
