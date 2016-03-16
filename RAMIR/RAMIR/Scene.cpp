@@ -33,15 +33,22 @@ Scene::~Scene() {
 
 }
 
-
-//Line-side check, checks on which side of the line an object is
+/**************************************************************************************************************************************
+/	Line-side check, checks on which side of the line an object is
+/	If the object is exactly on the line, it's said to be on the right side
+**************************************************************************************************************************************/
 int Scene::LSCheck(Tracker t) {
+	/*
+	/	Tests:
+	/		(1) the entry/exit-line shall be vertical
+	/
+	*/
 	Blob b = t.getLastBlob();
 	Point2f p = b.getCent();
 	int blobx = p.x;
 	int bloby = p.y;
 
-	//assert(sx == 6);
+	assert(sx == ex);						//(1) DEBUG
 
 	if (blobx - sx < 0) {
 		return LEFTSIDE_OFLINE;				//if blob is on the left side
@@ -53,6 +60,6 @@ int Scene::LSCheck(Tracker t) {
 }
 
 //Within ROI check, checks if the tracked blob is within the ROI defined by the user
-bool WRCheck(Tracker t) {
+bool Scene::WRCheck(Tracker t) {
 	return true;
 }
