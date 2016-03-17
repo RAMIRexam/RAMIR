@@ -21,7 +21,7 @@ class Tracker {
 
 public:
 
-	Tracker(Blob blob, Scene scene);
+	Tracker(Blob blob, Scene* sce);
 	~Tracker();
 
 	int getDuration();

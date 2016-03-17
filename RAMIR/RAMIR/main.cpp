@@ -33,13 +33,18 @@ vector<Rect> getAllRects(vector<vector<Point>> contours);
 vector<Blob> createBlobs(Mat image, vector<vector<Point>> contours);
 vector<Tracker*> intersectionTest(vector<Blob> blobs, vector<Tracker*> trackers);
 vector<Tracker*> tracking(vector<Blob> blobs);
+vector<Tracker*> trackerSurvivalTest(vector<Tracker*> trackers);
+void countTrackers();
 void countPersonCheck();
 void paintTrackerinfo();
 
-vector<Tracker*> trackers;									//Contains trackers which hasn't been counted yet.
+vector<Tracker*> trackers;										//Contains trackers which hasn't been counted yet.
 vector<Tracker*> ACTrackers;									//Already counted trackers. When a tracker is counted it shall be moved from trackers to this vector
 
 Scene scene;
+
+int rightMovCnt;												//Person moved from left to right detected this many times
+int leftMovCnt;													//Person moved from right to left detected this many times
 
 bool paintRect = true;
 
@@ -52,6 +57,9 @@ int main()
 	Settings::loadSettings();
 
 	MyWindows windows(1500);	//Used to handle image-representation. Argument = screenWidth
+
+	rightMovCnt = 0;
+	leftMovCnt = 0;
 
 	String video = "videoplayback2.mp4";
 	VideoCapture cap(video);
@@ -114,6 +122,8 @@ int main()
 		cv::erode(bgsub, erode, Settings::getErodeElement());
 		cv::dilate(erode, dilate, Settings::getDilateElement());
 
+		cvtColor(dilate, colorImage, CV_GRAY2BGR, 3);
+
 		vector<vector<Point>> contours = myFindContours(dilate);		//function uses findContours() to get all contours in the image
 		vector<Blob> blobs = createBlobs(frame, contours);				//create blobs (ROI, RECT, HIST) from all rects
 
@@ -131,10 +141,25 @@ int main()
 		//ellipse(colorImage, p, Size(40, 40), 0, 0, 360, Scalar(0, 255, 0), 1);
 
 		//View images
-		windows.feedImages("Windows", frame);
-		windows.feedImages("Dilate Window", dilate);
-		windows.feedImages("Contours", colorImage);
-		windows.showImages();
+		//windows.feedImages("Windows", frame);
+		//windows.feedImages("Dilate Window", dilate);
+		//windows.feedImages("Contours", colorImage);
+		//windows.showImages();
+		
+
+		/*
+		imshow("Windows", frame);
+		resizeWindow("Windows", 500, 500);
+		moveWindow("Windows", 0* 500, 0);
+
+		imshow("Dilate Window", dilate);
+		resizeWindow("Dilate Window", 500, 500);
+		moveWindow("Dilate Window", 1* 500, 0);
+		*/
+		
+		imshow("Contours", colorImage);
+		//resizeWindow("Contours", 500, 500);
+		moveWindow("Contours",  0, 0);
 		
 
 		switch (waitKey(1))
@@ -155,6 +180,7 @@ int main()
 
 /**************************************************************************************************************************************
 /	Paints how many times the trackers have found their blobs in the upper left corner
+/	Paints right and left counters in upper middle of the image
 **************************************************************************************************************************************/
 void paintTrackerinfo() {
 	
@@ -166,6 +192,8 @@ void paintTrackerinfo() {
 
 
 	for (Tracker *t : trackers) {
+
+		//Paints how many detections a tracker has made if it exceds or is equal to minDuration. Painted in upper left corner
 		if (t->getDuration() >= minDuration) {
 			putText(colorImage, "Tracker " + to_string(trackername) + ": Number detections " + to_string(t->getDuration()), Point(20, 20 + dText), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 0), 1);
 			dText += 20;
@@ -176,30 +204,48 @@ void paintTrackerinfo() {
 			}
 		}
 	}
+
+
+	//Paints right and left counters in upper middle of the image
+	putText(colorImage, "Right Counter: " + to_string(rightMovCnt), Point(500, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
+	putText(colorImage, "Left Counter: " + to_string(leftMovCnt), Point(500, 40), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
 }
+
 /**************************************************************************************************************************************
 /	Checks whether a person shall be counted (moved from trackers to ACTrackers)
-/	Counts the person if it has moved from the sSOL (start side of line) to the other side.
+/	Counts the person if it has moved from the sSOL (start side of line) to the other side. Possible sides: LEFTSIDE_OFLINE / RIGHTSIDE_OFLINE
 **************************************************************************************************************************************/
 void countTrackers() {
 /*
 /	Tests:
 /		(1) tracker.size in == tracker.size out
 /		(2) number of trackers in (trackers + ACtrackers) == number trackers out (trackers + ACtrackers)
-/
+/		(3)	trackers start side of line and current side of line must be either LEFTSIDE_OFLINE or RIGHTSIDE_OFLINE
 */
 	
-	int nTrackers_DEBUG = trackers.size() + ACTrackers.size();		//(2) DEBUG
+	int nTrackers_DEBUG = trackers.size() + ACTrackers.size();							//(2) DEBUG
 
 
-	if (trackers.size() > 0) {										//(1) DEBUG, used to check so trackers is'nt 0 at end
+	for (Tracker* t : trackers) {														//Update the trackers current side of line
+		t->curSOL = scene.LSCheck(t->getLastBlob());
+	}
+
+
+	if (trackers.size() > 0) {															//(1) DEBUG, used to check so trackers is'nt 0 at end
 		vector<Tracker*> tempTrackers;
 
 		while (trackers.size() > 0) {
 			Tracker* t = trackers.back();
 			trackers.pop_back();
 
-			if (t->curSOL != t->staSOL) {
+
+			assert(t->curSOL == RIGHTSIDE_OFLINE || t->curSOL == LEFTSIDE_OFLINE);		//(3) DEBUG
+			assert(t->staSOL == RIGHTSIDE_OFLINE || t->staSOL == LEFTSIDE_OFLINE);		//(3) DEBUG
+
+			if (t->curSOL != t->staSOL) {												//tracker shall be counted (has moved from one side to another)
+				if (t->curSOL == RIGHTSIDE_OFLINE) { rightMovCnt++; }					//increment movement from left to right counter
+				else{leftMovCnt++;}														//increment movement from right to left counter
+
 				ACTrackers.push_back(t);
 			}
 			else {
@@ -211,8 +257,6 @@ void countTrackers() {
 		}
 
 		trackers = tempTrackers;
-
-		assert(trackers.size() != 0);								//(1) DEBUG
 	}
 
 	assert(nTrackers_DEBUG == trackers.size() + ACTrackers.size());	//(2) DEBUG
@@ -237,13 +281,13 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 
 
 	if (ACTrackers.size() > 0) {							//if there exists already counted trackers, the blobs belonging to this trackers must first be removed
-		intersectionTest(blobs, ACTrackers);				//intersectionTest will move blobs to "already counted trackers"
+		ACTrackers = intersectionTest(blobs, ACTrackers);				//intersectionTest will move blobs to "already counted trackers"
 	}
 
 
 	if (trackers.size() == 0) {
 		for (Blob b : blobs) {								//No trackers exists. All blobs will turn to a tracker
-			Tracker *t = new Tracker(b, scene);
+			Tracker *t = new Tracker(b, &scene);
 
 			cout << t << endl;
 
@@ -254,10 +298,10 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 	}
 	
 	else {
-		intersectionTest(blobs, trackers);					//there already exists trackers, intersectionTest will move blobs to trackers
+		trackers = intersectionTest(blobs, trackers);					//there already exists trackers, intersectionTest will move blobs to trackers
 
 		for (Blob b : blobs) {								//iterate throught the rest of the blobs and create trackers for them
-			Tracker *t = new Tracker(b, scene);
+			Tracker *t = new Tracker(b, &scene);
 			t->processed = true;
 			trackers.push_back(t);
 
@@ -291,6 +335,7 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 
 	return trackers;
 }
+
 /**************************************************************************************************************************************
 /	Checks how many lifes a tracker has left. If zero the tracker will be destroyed. A trackers lifes depends on its emptyblobs.
 **************************************************************************************************************************************/
@@ -324,6 +369,8 @@ vector<Tracker*> trackerSurvivalTest(vector<Tracker*> trackers) {
 
 	assert(trackers.size() == tempTrackers.size());
 	assert(counter == numbertrackers);
+
+	return trackers;
 }
 
 /**************************************************************************************************************************************
@@ -388,6 +435,7 @@ vector<Tracker*> intersectionTest(vector<Blob> blobs, vector<Tracker*> trackers)
 		t->processed = true;
 
 	}
+	return trackers;
 }
 
 

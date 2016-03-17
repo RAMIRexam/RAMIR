@@ -10,7 +10,8 @@ _________________________________
 |_______________|________________|
 
 */
-Tracker::Tracker(Blob blob, Scene scene) {
+Tracker::Tracker(Blob blob, Scene* scene) {
+	
 	fillWithBlob(blob);
 	duration = 1;
 	processed = true;
@@ -20,14 +21,16 @@ Tracker::Tracker(Blob blob, Scene scene) {
 
 	// Start side of entry/exit-line
 	/******************************************/
-	int lineSide = scene.LSCheck(blob);
+	int lineSide = scene->LSCheck(blob);
 
 	if (lineSide == LEFTSIDE_OFLINE) {
 		staSOL = LEFTSIDE_OFLINE;
+		curSOL = LEFTSIDE_OFLINE;
 	}
 	else {
 		assert(lineSide == RIGHTSIDE_OFLINE);
 		staSOL = RIGHTSIDE_OFLINE;
+		curSOL = RIGHTSIDE_OFLINE;
 	}
 	/******************************************/
 }
@@ -43,10 +46,6 @@ Tracker::~Tracker() {
 
 }
 
-//Closest door check
-void Tracker::CDCheck(Blob b) {
-
-}
 
 int Tracker::getDuration() {
 	return duration;

@@ -16,13 +16,13 @@
 //									[CHECK] - not a method, just compare staSOL and curSOL
 //
 //	(4)	if(t is in ACtracker()	 	deal with the fact that a tracker can be placed in the ACtracker
-//									[] - 
+//									[CHECK] - blobs belonging to trackers in ACTrackers will be moved from the blobvector to corresponding ACTracker before trackers checks for belonging blobs 
 //
 //	(5)	blob.getCentroid()		 	Make it possible to reach a blobs centroid from the object
 //									[CHECK] - getCent() returns the centroid
 //
 //	(6)	delete ACTrackers		 	How shall ACTrackers be deleted?
-//									[] - 
+//									[CHECK] - survivaltest() 
 //
 //	(7)	empltyblob last			 	What will happen if an emptyblob is last in the tracker when it will check intersection with a new blob??
 //									[] - 

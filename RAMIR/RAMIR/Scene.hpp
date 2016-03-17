@@ -32,13 +32,13 @@ class Scene {
 
 public:
 	Scene(int arg_sx, int arg_sy, int arg_ex, int arg_ey, Mat ROI);
-	~Scene();
-	int LSCheck(Tracker t);									//Line-side check, checks on which side of the line an object is
-	int LSCheck(Blob b);			
-	bool WRCheck(Tracker t);								//Within ROI check, checks if the tracked blob is within the ROI defined by the user
+	Scene();															//Used to enable initialation as global variable in main
+	~Scene();									
+	int LSCheck(Blob b);												//Line-side check, checks on which side of the line an object is
+	//bool WRCheck(Tracker* t);											//Within ROI check, checks if the tracked blob is within the ROI defined by the user
 
 
-	bool pauseForLineCheckDEBUG;							//DEBUG, breakpoint will stop program and the programmer shall se if the object is on the right side
+	
 
 private:
 	//Entry/Exit-line in ROI
@@ -49,6 +49,7 @@ private:
 
 	Mat ROI;						//Defines the ROI where objects will be processed
 
+	bool pauseForLineCheckDEBUG;										//DEBUG, breakpoint will stop program and the programmer shall se if the object is on the right side
 };
 
 #endif
