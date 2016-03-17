@@ -1,29 +1,35 @@
 #include "Tracker.hpp"
 
 /*
-________________________________
-|				|				|
-|				|				|
-|entrypos		|vertical		|exitPos
-|				|eeline			|
-|				|pos			|
-|_______________|_______________|
+_________________________________
+|				|				 |
+|				|				 |
+|LEFTSIDE_OFLINE|RIGHTSIDE_OFLINE|
+|				|				 |
+|				|				 |
+|_______________|________________|
 
 */
-Tracker::Tracker(Blob blob, int blobCenter, int entryPos, int exitPos) {
+Tracker::Tracker(Blob blob, Scene scene) {
 	fillWithBlob(blob);
 	duration = 1;
 	processed = true;
 	fullTrackerLife = 2;
 	trackerLife = fullTrackerLife;
 
-	int lEntry = blobCenter - entryPos;					//Length to entry
-	int lExit = exitPos - blobCenter;					//Length to exit
 
-	assert(lEntry > 0 && lExit > 0);
+	// Start side of entry/exit-line
+	/******************************************/
+	int lineSide = scene.LSCheck(blob);
 
-	if (lEntry < lExit ? startDoor = ENTRY_DOOR : startDoor = EXIT_DOOR);	//Used to 
-
+	if (lineSide == LEFTSIDE_OFLINE) {
+		staSOL = LEFTSIDE_OFLINE;
+	}
+	else {
+		assert(lineSide == RIGHTSIDE_OFLINE);
+		staSOL = RIGHTSIDE_OFLINE;
+	}
+	/******************************************/
 }
 
 Tracker::~Tracker() {
@@ -38,7 +44,7 @@ Tracker::~Tracker() {
 }
 
 //Closest door check
-void CDCheck(Blob b) {
+void Tracker::CDCheck(Blob b) {
 
 }
 

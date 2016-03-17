@@ -7,6 +7,7 @@
 #include <iostream>
 #include "Blob.hpp"
 #include "Definitions.hpp"
+#include "Scene.hpp"
 
 #include <opencv2\core.hpp>
 #include <opencv2\highgui.hpp>
@@ -20,7 +21,7 @@ class Tracker {
 
 public:
 
-	Tracker(Blob blob, int verticalEelinePos, int entryPos, int exitPos);
+	Tracker(Blob blob, Scene scene);
 	~Tracker();
 
 	int getDuration();

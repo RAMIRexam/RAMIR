@@ -7,7 +7,7 @@
 //
 //MISSION
 //	(1) LSCheck(Tracker)			add a function that decides which side of the entry/exit-line (eeline) the blob is on
-//									[] - 
+//									[CHECK] - The function returns LEFTSIDE_OFLINE or RIGHTSIDE_OFLINE 
 //
 //	(2) int staSOL					add to tracker which side of the eeline the blob was first detected (startside of line)
 //									[CHECK] - staSOL and curSOL.
@@ -20,6 +20,12 @@
 //
 //	(5)	blob.getCentroid()		 	Make it possible to reach a blobs centroid from the object
 //									[CHECK] - getCent() returns the centroid
+//
+//	(6)	delete ACTrackers		 	How shall ACTrackers be deleted?
+//									[] - 
+//
+//	(7)	empltyblob last			 	What will happen if an emptyblob is last in the tracker when it will check intersection with a new blob??
+//									[] - 
 //
 //
 //Emil A

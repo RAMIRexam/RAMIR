@@ -6,11 +6,19 @@ while (true)
 	//BGSUB
 	//DILATE
 	//GET ALL CONTOURS FROM DILATE
+	//CREATE BLOBS
 
 	
-	//getallrects
-	//create blobs for all rects
+	//If there exists already counted trackers
+	if(ACTrackers.size() > 0){
+		//CHECK INTERSECTION AS BELOW
+		//REMOVE BLOBS FROM BLOBVECTOR
+		//
+	
+	}
 
+	
+	
 	if (trackers == 0) { - kan inte jämföra med några trackers...
 		//create trackers for all blobs
 		//remove blobs from bloblist

@@ -30,13 +30,16 @@ int verticalEelinePos; //vertical entry/exit-line position
 void findCentroid(Mat binImage, vector<vector<Point>> contours);
 vector<vector<Point>> myFindContours(Mat src);
 vector<Rect> getAllRects(vector<vector<Point>> contours);
-vector<Blob> createBlobs(vector<Rect> rects, Mat image);
+vector<Blob> createBlobs(Mat image, vector<vector<Point>> contours);
+vector<Tracker*> intersectionTest(vector<Blob> blobs, vector<Tracker*> trackers);
 vector<Tracker*> tracking(vector<Blob> blobs);
 void countPersonCheck();
 void paintTrackerinfo();
 
 vector<Tracker*> trackers;									//Contains trackers which hasn't been counted yet.
 vector<Tracker*> ACTrackers;									//Already counted trackers. When a tracker is counted it shall be moved from trackers to this vector
+
+Scene scene;
 
 bool paintRect = true;
 
@@ -79,6 +82,7 @@ int main()
 	pMOG->apply(frame, bgsub); //TESTING!
 	//------------------------------------------------------
 
+	scene = Scene(frame.cols/2 , 0, frame.cols / 2, frame.rows, frame);			//frame is not used as ROI yet (whithinROI-check not implemented)
 
 	Settings::init(&pMOG);
 
@@ -119,17 +123,19 @@ int main()
 		
 
 		
+
+																		//Paint entry/exit-line
+		line(colorImage, Point(verticalEelinePos, 0), Point(verticalEelinePos, colorImage.rows), Scalar(255, 0, 0), 2);
+
+		//Paint centroid
+		//ellipse(colorImage, p, Size(40, 40), 0, 0, 360, Scalar(0, 255, 0), 1);
+
+		//View images
 		windows.feedImages("Windows", frame);
 		windows.feedImages("Dilate Window", dilate);
 		windows.feedImages("Contours", colorImage);
 		windows.showImages();
-
-
-		//Paint entry/exit-line
-		line(colorImage, Point(verticalEelinePos, 0), Point(verticalEelinePos, colorImage.rows), Scalar(255, 0, 0), 2);
 		
-		//Paint centroid
-		//ellipse(colorImage, p, Size(40, 40), 0, 0, 360, Scalar(0, 255, 0), 1);
 
 		switch (waitKey(1))
 		{
@@ -217,6 +223,9 @@ void countTrackers() {
 /**************************************************************************************************************************************
 /	Trackers will be filled with blobs, one blob for each image.
 /	if a tracker cannot find a blob that matches the tracker, it will be filled with a "emptyblob"
+/	ACTrackers contains already counted trackers. First the blobvector will be checkt for blobs belonging to trackers in ACTrackers
+/	When blobs belonging to ACTrackers are removed, the rest of the blobs will be new trackers or moved to trackers (not yet counted trackers)
+/
 **************************************************************************************************************************************/
 vector<Tracker*> tracking(vector<Blob> blobs) {
 /*
@@ -226,12 +235,15 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 /
 */
 
+
+	if (ACTrackers.size() > 0) {							//if there exists already counted trackers, the blobs belonging to this trackers must first be removed
+		intersectionTest(blobs, ACTrackers);				//intersectionTest will move blobs to "already counted trackers"
+	}
+
+
 	if (trackers.size() == 0) {
-		/*
-		No trackers exists. All blobs will turn to a tracker
-		*/
-		for (Blob b : blobs) {
-			Tracker *t = new Tracker(b);
+		for (Blob b : blobs) {								//No trackers exists. All blobs will turn to a tracker
+			Tracker *t = new Tracker(b, scene);
 
 			cout << t << endl;
 
@@ -240,66 +252,12 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 
 		}
 	}
-
-	//there already exists trackers
+	
 	else {
-		for (Tracker *t : trackers) {
-			vector<Blob> restBlobs;
-			Blob bestBlob;				// constructs an emptyblob
-			assert(bestBlob.emptyBlob == true);	//if not change if below
+		intersectionTest(blobs, trackers);					//there already exists trackers, intersectionTest will move blobs to trackers
 
-			double minBhatta = DBL_MAX;
-			vector<Mat> isBlobs;			//InterSecting Blobs
-
-			int blobcounter = 0; //DEBUGGING!
-			int numberBlobs = blobs.size();
-
-			while (blobs.size() > 0) {
-				blobcounter++;//DEBUGGING
-
-				Blob b = blobs.back();
-				//Pop makes shure other intersecting blobs than the best is ignored
-				blobs.pop_back();
-
-				//intersection test
-				if ((b.getRect() & t->getLastBlob().getRect()).area() > 0) {
-					Mat hist1 = b.getHist();
-					Mat hist2 = t->getLastBlob().getHist();
-
-
-					double bhatta = compareHist(b.getHist(), t->getLastBlob().getHist(), CV_COMP_BHATTACHARYYA);
-
-					if (bhatta < minBhatta) {
-						minBhatta = bhatta;
-
-						bestBlob = b;
-					}
-				}
-				else { restBlobs.push_back(b); }
-			}
-			assert(blobcounter == numberBlobs); //if blob is pop'ed, will all blobs still be iterated?
-
-												//Debugvariable
-			int testsize = restBlobs.size();
-
-			blobs = restBlobs; //memcpy(&blobs, &restBlobs, sizeof(restBlobs));
-
-							   /*DEBUG*/
-			assert(&blobs != &restBlobs);
-			assert(blobs.size() == testsize);
-			/*DEBUG*/
-
-			//If intersection
-			if (!bestBlob.emptyBlob) { t->fillWithBlob(bestBlob); }
-			else { t->fillWithEmptyBlob(); }
-
-			t->processed = true;
-
-		}
-
-		//iterate throught the rest of the blobs and create trackers for them
-		for (Blob b : blobs) {
-			Tracker *t = new Tracker(b);
+		for (Blob b : blobs) {								//iterate throught the rest of the blobs and create trackers for them
+			Tracker *t = new Tracker(b, scene);
 			t->processed = true;
 			trackers.push_back(t);
 
@@ -317,13 +275,26 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 	}
 
 
-
 	for (Tracker *t : trackers) {
 		cout << "Tracker: " << t << endl;
 
 		assert(t->processed == true);
 	}
 
+	trackers = trackerSurvivalTest(trackers);
+	ACTrackers = trackerSurvivalTest(ACTrackers);
+
+
+	for (Tracker *t : trackers) {t->processed = false;}				//reset processed for next iteration
+	for (Tracker *t : ACTrackers) {t->processed = false;}			//reset processed for next iteration
+
+
+	return trackers;
+}
+/**************************************************************************************************************************************
+/	Checks how many lifes a tracker has left. If zero the tracker will be destroyed. A trackers lifes depends on its emptyblobs.
+**************************************************************************************************************************************/
+vector<Tracker*> trackerSurvivalTest(vector<Tracker*> trackers) {
 	//DEBUGGING
 	int numbertrackers = trackers.size();
 	int counter = 0;
@@ -337,7 +308,6 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 		Tracker *t = trackers.back();
 
 		trackers.pop_back();
-		t->processed = false;
 
 		if (t->survivalTest()) {
 			tempTrackers.push_back(t);
@@ -354,14 +324,75 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 
 	assert(trackers.size() == tempTrackers.size());
 	assert(counter == numbertrackers);
+}
 
+/**************************************************************************************************************************************
+/	Iterates throught all trackers and checks if their last matched blob intersect with one of them in the scene. If a blob intersects
+/	it will be added to the tracker and removed from the blobvector.
+/
+**************************************************************************************************************************************/
+vector<Tracker*> intersectionTest(vector<Blob> blobs, vector<Tracker*> trackers) {
+	/*
+	/	Tests:
+	/		(1)
+	/		(2)
+	/
+	*/
 
 	for (Tracker *t : trackers) {
-		assert(t->processed == false);
-	}
+		vector<Blob> restBlobs;
+		Blob bestBlob;									// constructs an emptyblob (WORKS)
 
-	return trackers;
+		double minBhatta = DBL_MAX;
+		vector<Mat> isBlobs;							//InterSecting Blobs
+
+		int blobcounter = 0;							//DEBUG
+		int numberBlobs = blobs.size();					//DEBUG
+
+		while (blobs.size() > 0) {
+			blobcounter++;								//DEBUG
+
+			Blob b = blobs.back();
+			blobs.pop_back();							//Pop makes shure other intersecting blobs than the best is ignored
+
+														//intersection test
+			if ((b.getRect() & t->getLastBlob().getRect()).area() > 0) {
+				Mat hist1 = b.getHist();
+				Mat hist2 = t->getLastBlob().getHist();
+
+
+				double bhatta = compareHist(b.getHist(), t->getLastBlob().getHist(), CV_COMP_BHATTACHARYYA);
+
+				if (bhatta < minBhatta) {
+					minBhatta = bhatta;
+
+					bestBlob = b;
+				}
+			}
+			else { restBlobs.push_back(b); }
+		}
+		assert(blobcounter == numberBlobs); //if blob is pop'ed, will all blobs still be iterated?
+
+											//Debugvariable
+		int testsize = restBlobs.size();
+
+		blobs = restBlobs; //memcpy(&blobs, &restBlobs, sizeof(restBlobs));
+
+		assert(&blobs != &restBlobs);						//DEBUG
+		assert(blobs.size() == testsize);					//DEBUG
+
+															//If intersection
+		if (!bestBlob.emptyBlob) { t->fillWithBlob(bestBlob); }
+		else { t->fillWithEmptyBlob(); }
+
+		t->processed = true;
+
+	}
 }
+
+
+
+
 
 
 /**************************************************************************************************************************************
