@@ -45,6 +45,8 @@ Scene scene;
 
 int rightMovCnt;												//Person moved from left to right detected this many times
 int leftMovCnt;													//Person moved from right to left detected this many times
+int trackerLife;												//How many images its accaptable for a tracker to not find a belonging blob
+int minTrackToBeCounted;										//How many tracks an object has to be tracked before it accepted into the ACTracker
 
 bool paintRect = true;
 
@@ -60,6 +62,8 @@ int main()
 
 	rightMovCnt = 0;
 	leftMovCnt = 0;
+	trackerLife = 4;
+	minTrackToBeCounted = 0;
 
 	String video = "videoplayback2.mp4";
 	VideoCapture cap(video);
@@ -209,6 +213,20 @@ void paintTrackerinfo() {
 	//Paints right and left counters in upper middle of the image
 	putText(colorImage, "Right Counter: " + to_string(rightMovCnt), Point(500, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
 	putText(colorImage, "Left Counter: " + to_string(leftMovCnt), Point(500, 40), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
+
+	//Print how many ACTrackers there is
+
+	if (ACTrackers.size() == 0) {
+		putText(colorImage, "num ACTrackers: 0", Point(800, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(255, 0, 255), 1);
+	}
+	else {
+		for (Tracker* t : ACTrackers) {
+			putText(colorImage, "num ACTrackers: " + to_string(ACTrackers.size()), Point(800, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(255, 0, 255), 1);
+		}
+	}
+	
+	
+
 }
 
 /**************************************************************************************************************************************
@@ -238,11 +256,10 @@ void countTrackers() {
 			Tracker* t = trackers.back();
 			trackers.pop_back();
 
-
 			assert(t->curSOL == RIGHTSIDE_OFLINE || t->curSOL == LEFTSIDE_OFLINE);		//(3) DEBUG
 			assert(t->staSOL == RIGHTSIDE_OFLINE || t->staSOL == LEFTSIDE_OFLINE);		//(3) DEBUG
 
-			if (t->curSOL != t->staSOL) {												//tracker shall be counted (has moved from one side to another)
+			if (t->curSOL != t->staSOL && t->getDuration() > minTrackToBeCounted) {												//tracker shall be counted (has moved from one side to another)
 				if (t->curSOL == RIGHTSIDE_OFLINE) { rightMovCnt++; }					//increment movement from left to right counter
 				else{leftMovCnt++;}														//increment movement from right to left counter
 
@@ -280,14 +297,14 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 */
 
 
-	if (ACTrackers.size() > 0) {							//if there exists already counted trackers, the blobs belonging to this trackers must first be removed
-		ACTrackers = intersectionTest(blobs, ACTrackers);				//intersectionTest will move blobs to "already counted trackers"
+	if (ACTrackers.size() > 0) {									//if there exists already counted trackers, the blobs belonging to this trackers must first be removed
+		ACTrackers = intersectionTest(blobs, ACTrackers);			//intersectionTest will move blobs to "already counted trackers"
 	}
 
 
 	if (trackers.size() == 0) {
-		for (Blob b : blobs) {								//No trackers exists. All blobs will turn to a tracker
-			Tracker *t = new Tracker(b, &scene);
+		for (Blob b : blobs) {										//No trackers exists. All blobs will turn to a tracker
+			Tracker *t = new Tracker(b, trackerLife, &scene);
 
 			cout << t << endl;
 
@@ -298,10 +315,10 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 	}
 	
 	else {
-		trackers = intersectionTest(blobs, trackers);					//there already exists trackers, intersectionTest will move blobs to trackers
+		trackers = intersectionTest(blobs, trackers);				//there already exists trackers, intersectionTest will move blobs to trackers
 
-		for (Blob b : blobs) {								//iterate throught the rest of the blobs and create trackers for them
-			Tracker *t = new Tracker(b, &scene);
+		for (Blob b : blobs) {										//iterate throught the rest of the blobs and create trackers for them
+			Tracker *t = new Tracker(b, trackerLife, &scene);
 			t->processed = true;
 			trackers.push_back(t);
 
@@ -381,29 +398,35 @@ vector<Tracker*> trackerSurvivalTest(vector<Tracker*> trackers) {
 vector<Tracker*> intersectionTest(vector<Blob> blobs, vector<Tracker*> trackers) {
 	/*
 	/	Tests:
-	/		(1)
+	/		(1) Blob from getLastBlob, shall never return an emptyblob
 	/		(2)
 	/
 	*/
 
-	for (Tracker *t : trackers) {
+
+	int i = trackers.size() - 1;
+
+	while(i >= 0){
+		Tracker* t = trackers[i];
+		
 		vector<Blob> restBlobs;
-		Blob bestBlob;									// constructs an emptyblob (WORKS)
+		Blob bestBlob;															// constructs an emptyblob (WORKS)
 
 		double minBhatta = DBL_MAX;
-		vector<Mat> isBlobs;							//InterSecting Blobs
+		vector<Mat> isBlobs;													//InterSecting Blobs
 
-		int blobcounter = 0;							//DEBUG
-		int numberBlobs = blobs.size();					//DEBUG
+		int blobcounter = 0;													//DEBUG
+		int numberBlobs = blobs.size();											//DEBUG
 
 		while (blobs.size() > 0) {
-			blobcounter++;								//DEBUG
+			blobcounter++;														//DEBUG
 
 			Blob b = blobs.back();
-			blobs.pop_back();							//Pop makes shure other intersecting blobs than the best is ignored
+			blobs.pop_back();													//Pop makes shure other intersecting blobs than the best is ignored
 
-														//intersection test
-			if ((b.getRect() & t->getLastBlob().getRect()).area() > 0) {
+			assert(!t->getLastBlob().emptyBlob);								//(1) DEBUG
+
+			if ((b.getRect() & t->getLastBlob().getRect()).area() > 0) {		//intersection test
 				Mat hist1 = b.getHist();
 				Mat hist2 = t->getLastBlob().getHist();
 
@@ -433,7 +456,7 @@ vector<Tracker*> intersectionTest(vector<Blob> blobs, vector<Tracker*> trackers)
 		else { t->fillWithEmptyBlob(); }
 
 		t->processed = true;
-
+		i--;
 	}
 	return trackers;
 }

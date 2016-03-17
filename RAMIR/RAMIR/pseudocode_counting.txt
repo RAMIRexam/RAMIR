@@ -25,7 +25,13 @@
 //									[CHECK] - survivaltest() 
 //
 //	(7)	empltyblob last			 	What will happen if an emptyblob is last in the tracker when it will check intersection with a new blob??
-//									[] - 
+//									[CHECK] - it will no longer return an emptyblob 
+//
+//	(8)	minTrackToBeCounted		 	Handle if a object has changed from start side of line to the other one, but not reached enough tracks.
+//									[CHECK] - controlled with the global variable minTrackToBeCounted
+//
+//	(9)	manyBlobs on one place	 	Can there be many blobs/trackers on same place. Had 4 trackers on one blob in debugging
+//									[] - must insert in trackervector from one side and get from one
 //
 //
 //Emil A

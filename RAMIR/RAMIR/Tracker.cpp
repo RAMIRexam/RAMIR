@@ -10,12 +10,12 @@ _________________________________
 |_______________|________________|
 
 */
-Tracker::Tracker(Blob blob, Scene* scene) {
+Tracker::Tracker(Blob blob, int arg_trackerLife, Scene* scene) {
 	
 	fillWithBlob(blob);
 	duration = 1;
 	processed = true;
-	fullTrackerLife = 2;
+	fullTrackerLife = arg_trackerLife;
 	trackerLife = fullTrackerLife;
 
 
@@ -46,19 +46,25 @@ Tracker::~Tracker() {
 
 }
 
-
+//Returns an int on how many images a tracker has tracked an object
 int Tracker::getDuration() {
 	return duration;
 }
 
 Blob Tracker::getLastBlob() {
 	assert(blobvector.size() > 0);
-	return blobvector.back();
+	return lastBlob;
+}
+
+void Tracker::setTrackerLife(int life) {
+	trackerLife = life;
+	fullTrackerLife = life;
 }
 
 
 void Tracker::fillWithBlob(Blob b) {
 	blobvector.push_back(b);
+	lastBlob = b;
 	duration++;
 }
 

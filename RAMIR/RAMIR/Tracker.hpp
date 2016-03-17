@@ -21,12 +21,13 @@ class Tracker {
 
 public:
 
-	Tracker(Blob blob, Scene* sce);
+	Tracker(Blob blob, int trackerLife, Scene* sce);
 	~Tracker();
 
 	int getDuration();
 	Blob getLastBlob();
 	bool survivalTest();
+	void setTrackerLife(int life);
 	void fillWithBlob(Blob b);
 	void fillWithEmptyBlob();
 	void printTracker();
@@ -41,6 +42,7 @@ public:
 
 private:
 	vector<Blob> blobvector;		//contains all detected blobs in order
+	Blob lastBlob;
 	int duration;
 	int fullTrackerLife;
 	int trackerLife;
