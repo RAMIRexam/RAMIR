@@ -30,7 +30,6 @@ public:
 	void setTrackerLife(int life);
 	void fillWithBlob(Blob b);
 	void fillWithEmptyBlob();
-	void printTracker();
 
 	
 
@@ -42,12 +41,11 @@ public:
 
 private:
 	vector<Blob> blobvector;		//contains all detected blobs in order
-	Blob lastBlob;
-	int duration;
-	int fullTrackerLife;
-	int trackerLife;
+	Blob lastBlob;					//getLastBlob() returns this variable. lastBlob shall never be an emptyblob.
+	int duration;					//How many blobs the blobvector contains
+	int fullTrackerLife;			//How much life a tracker has when constructed and when a blob (not emptyblob) is added to the blobvector
+	int trackerLife;				//A trackers actual life. Will be reverse-counted when a emptyblob is added to the blobvector
 
-	
 };
 
 #endif // !SETTINGS_HPP

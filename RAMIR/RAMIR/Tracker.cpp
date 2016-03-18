@@ -77,14 +77,6 @@ void Tracker::fillWithEmptyBlob() {
 	duration++;
 }
 
-void Tracker::printTracker() {
-	
-	getLastBlob();
-
-	//cout << "lastblob: " << getLastBlob() << "\t lasthist " << getLastHist() << endl;
-
-}
-
 
 
 /*

@@ -22,12 +22,11 @@ using namespace cv;
 using namespace std;
 
 Ptr<BackgroundSubtractor> pMOG;
-Mat colorImage;
+Mat colorImage;													//Final imageprocessing image, text is painted in this image
 
-int verticalEelinePos; //vertical entry/exit-line position
+int verticalEelinePos;											//vertical entry/exit-line position in the image. Value can be changed below.
 
 
-void findCentroid(Mat binImage, vector<vector<Point>> contours);
 vector<vector<Point>> myFindContours(Mat src);
 vector<Rect> getAllRects(vector<vector<Point>> contours);
 vector<Blob> createBlobs(Mat image, vector<vector<Point>> contours);
@@ -35,7 +34,6 @@ vector<Tracker*> intersectionTest(vector<Blob> blobs, vector<Tracker*> trackers)
 vector<Tracker*> tracking(vector<Blob> blobs);
 vector<Tracker*> trackerSurvivalTest(vector<Tracker*> trackers);
 void countTrackers();
-void countPersonCheck();
 void paintTrackerinfo();
 
 vector<Tracker*> trackers;										//Contains trackers which hasn't been counted yet.
@@ -58,7 +56,7 @@ int main()
 
 	Settings::loadSettings();
 
-	MyWindows windows(1500);	//Used to handle image-representation. Argument = screenWidth
+	MyWindows windows(1500);									//Used to handle image-representation. Argument = screenWidth
 
 	rightMovCnt = 0;
 	leftMovCnt = 0;
@@ -68,16 +66,10 @@ int main()
 	String video = "videoplayback2.mp4";
 	VideoCapture cap(video);
 
-	//cap.set(CV_CAP_PROP_FRAME_WIDTH, imageWidth);		Fick ej att fungera, använder resizeWindow() istället
-	//cap.set(CV_CAP_PROP_FRAME_HEIGHT, imageHeight);
-
 	if (!cap.isOpened())
 		return -1;
 
 
-	namedWindow("Window", WINDOW_AUTOSIZE);
-	namedWindow("BGS", WINDOW_AUTOSIZE);
-	namedWindow("Contours", CV_WINDOW_AUTOSIZE);
 
 	pMOG = createBackgroundSubtractorMOG2(Settings::getA(), (((double)Settings::getB()) / 10), false);
 
@@ -102,7 +94,7 @@ int main()
 	{	
 		
 		cap >> frame;
-		verticalEelinePos = frame.cols / 2;
+		verticalEelinePos = frame.cols / 2;										//User option, where shall the eeline be placed?
 
 		if (frame.empty())
 		{
@@ -144,27 +136,35 @@ int main()
 		//Paint centroid
 		//ellipse(colorImage, p, Size(40, 40), 0, 0, 360, Scalar(0, 255, 0), 1);
 
+
+		
+
+		//namedWindow("Window", WINDOW_AUTOSIZE);
+		//namedWindow("BGS", WINDOW_AUTOSIZE);
+		namedWindow("Contours", CV_WINDOW_AUTOSIZE);
+		
+		Mat out;
+		double divider = 2.2;
+
+		int width = colorImage.cols / divider;
+		int height = colorImage.rows / divider;
+
+		Size size(width, height);
+
+		resize(colorImage, out, size);
+
+		moveWindow("Windows", 0, 0);
+		imshow("Windows", out);
+
+
+
+		
+
 		//View images
 		//windows.feedImages("Windows", frame);
 		//windows.feedImages("Dilate Window", dilate);
 		//windows.feedImages("Contours", colorImage);
 		//windows.showImages();
-		
-
-		/*
-		imshow("Windows", frame);
-		resizeWindow("Windows", 500, 500);
-		moveWindow("Windows", 0* 500, 0);
-
-		imshow("Dilate Window", dilate);
-		resizeWindow("Dilate Window", 500, 500);
-		moveWindow("Dilate Window", 1* 500, 0);
-		*/
-		
-		imshow("Contours", colorImage);
-		//resizeWindow("Contours", 500, 500);
-		moveWindow("Contours",  0, 0);
-		
 
 		switch (waitKey(1))
 		{
@@ -214,8 +214,8 @@ void paintTrackerinfo() {
 	putText(colorImage, "Right Counter: " + to_string(rightMovCnt), Point(500, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
 	putText(colorImage, "Left Counter: " + to_string(leftMovCnt), Point(500, 40), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
 
-	//Print how many ACTrackers there is
 
+	//Print how many ACTrackers there is
 	if (ACTrackers.size() == 0) {
 		putText(colorImage, "num ACTrackers: 0", Point(800, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(255, 0, 255), 1);
 	}
@@ -224,9 +224,6 @@ void paintTrackerinfo() {
 			putText(colorImage, "num ACTrackers: " + to_string(ACTrackers.size()), Point(800, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(255, 0, 255), 1);
 		}
 	}
-	
-	
-
 }
 
 /**************************************************************************************************************************************
@@ -259,7 +256,7 @@ void countTrackers() {
 			assert(t->curSOL == RIGHTSIDE_OFLINE || t->curSOL == LEFTSIDE_OFLINE);		//(3) DEBUG
 			assert(t->staSOL == RIGHTSIDE_OFLINE || t->staSOL == LEFTSIDE_OFLINE);		//(3) DEBUG
 
-			if (t->curSOL != t->staSOL && t->getDuration() > minTrackToBeCounted) {												//tracker shall be counted (has moved from one side to another)
+			if (t->curSOL != t->staSOL && t->getDuration() > minTrackToBeCounted) {		//tracker shall be counted (has moved from one side to another)
 				if (t->curSOL == RIGHTSIDE_OFLINE) { rightMovCnt++; }					//increment movement from left to right counter
 				else{leftMovCnt++;}														//increment movement from right to left counter
 
@@ -268,15 +265,12 @@ void countTrackers() {
 			else {
 				tempTrackers.push_back(t);
 			}
-
-			//BUG, FOLOWING REPLACED WITH ABOVE. CANT USE FUNCTIONCALLS IN RESULT...
-			//if (t->curSOL != t->staSOL ? ACtrackers.push_back(t) : tempTrackers.push_back(t));
 		}
 
 		trackers = tempTrackers;
 	}
 
-	assert(nTrackers_DEBUG == trackers.size() + ACTrackers.size());	//(2) DEBUG
+	assert(nTrackers_DEBUG == trackers.size() + ACTrackers.size());						//(2) DEBUG
 
 }
 
@@ -286,13 +280,11 @@ void countTrackers() {
 /	if a tracker cannot find a blob that matches the tracker, it will be filled with a "emptyblob"
 /	ACTrackers contains already counted trackers. First the blobvector will be checkt for blobs belonging to trackers in ACTrackers
 /	When blobs belonging to ACTrackers are removed, the rest of the blobs will be new trackers or moved to trackers (not yet counted trackers)
-/
 **************************************************************************************************************************************/
 vector<Tracker*> tracking(vector<Blob> blobs) {
 /*
 /	Tests:
-/		(1) 
-/		(2) 
+/		(1) Check if all trackers is processed at the end
 /
 */
 
@@ -305,9 +297,6 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 	if (trackers.size() == 0) {
 		for (Blob b : blobs) {										//No trackers exists. All blobs will turn to a tracker
 			Tracker *t = new Tracker(b, trackerLife, &scene);
-
-			cout << t << endl;
-
 			t->processed = true;
 			trackers.push_back(t);
 
@@ -325,25 +314,20 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 		}
 
 		for (Tracker *t : trackers) {
-			if (!t->processed) {
+			if (!t->processed) {									//if tracker is not processed, fill it with emptyblob
 				t->fillWithEmptyBlob();
 				t->processed = true;
-
-				cout << "Tracker: " << t << endl;
-
 			}
 		}
 	}
 
 
 	for (Tracker *t : trackers) {
-		cout << "Tracker: " << t << endl;
-
-		assert(t->processed == true);
+		assert(t->processed == true);								//(1) DEBUG
 	}
 
-	trackers = trackerSurvivalTest(trackers);
-	ACTrackers = trackerSurvivalTest(ACTrackers);
+	trackers = trackerSurvivalTest(trackers);						//decrement trackerlife. If trackerlife is 0 the tracker is removed
+	ACTrackers = trackerSurvivalTest(ACTrackers);					//decrement trackerlife. If trackerlife is 0 the tracker is removed
 
 
 	for (Tracker *t : trackers) {t->processed = false;}				//reset processed for next iteration
@@ -373,7 +357,6 @@ vector<Tracker*> trackerSurvivalTest(vector<Tracker*> trackers) {
 
 		if (t->survivalTest()) {
 			tempTrackers.push_back(t);
-			cout << t << endl;
 		}
 		else {
 			delete t;
@@ -393,7 +376,6 @@ vector<Tracker*> trackerSurvivalTest(vector<Tracker*> trackers) {
 /**************************************************************************************************************************************
 /	Iterates throught all trackers and checks if their last matched blob intersect with one of them in the scene. If a blob intersects
 /	it will be added to the tracker and removed from the blobvector.
-/
 **************************************************************************************************************************************/
 vector<Tracker*> intersectionTest(vector<Blob> blobs, vector<Tracker*> trackers) {
 	/*
@@ -403,10 +385,8 @@ vector<Tracker*> intersectionTest(vector<Blob> blobs, vector<Tracker*> trackers)
 	/
 	*/
 
-
 	int i = trackers.size() - 1;
-
-	while(i >= 0){
+	while(i >= 0){																//Check tracker from front (oldest tracker shall be checked first)
 		Tracker* t = trackers[i];
 		
 		vector<Blob> restBlobs;
@@ -441,12 +421,11 @@ vector<Tracker*> intersectionTest(vector<Blob> blobs, vector<Tracker*> trackers)
 			}
 			else { restBlobs.push_back(b); }
 		}
-		assert(blobcounter == numberBlobs); //if blob is pop'ed, will all blobs still be iterated?
+		assert(blobcounter == numberBlobs);					//if blob is pop'ed, will all blobs still be iterated?
 
-											//Debugvariable
-		int testsize = restBlobs.size();
+		int testsize = restBlobs.size();					//Debugvariable
 
-		blobs = restBlobs; //memcpy(&blobs, &restBlobs, sizeof(restBlobs));
+		blobs = restBlobs;									//memcpy(&blobs, &restBlobs, sizeof(restBlobs));
 
 		assert(&blobs != &restBlobs);						//DEBUG
 		assert(blobs.size() == testsize);					//DEBUG
@@ -460,10 +439,6 @@ vector<Tracker*> intersectionTest(vector<Blob> blobs, vector<Tracker*> trackers)
 	}
 	return trackers;
 }
-
-
-
-
 
 
 /**************************************************************************************************************************************
@@ -538,12 +513,9 @@ vector<Blob> createBlobs(Mat image, vector<vector<Point>> contours) {
 	return blobs;
 }
 
-
-
-
-/*
-returns a vector containing all rectangles around each object.
-*/
+/**************************************************************************************************************************************
+/	Returns a vector containing all rectangles around each object.
+**************************************************************************************************************************************/
 vector<Rect> getAllRects(vector<vector<Point>> contours) {
 
 	vector<Rect> rects;
@@ -560,7 +532,9 @@ vector<Rect> getAllRects(vector<vector<Point>> contours) {
 	return rects;
 }
 
-
+/**************************************************************************************************************************************
+/	Used to reduce code in main
+**************************************************************************************************************************************/
 vector<vector<Point>> myFindContours(Mat src) {
 	Mat src_cpy;
 	src.copyTo(src_cpy);
@@ -572,40 +546,3 @@ vector<vector<Point>> myFindContours(Mat src) {
 	return contours;
 }
 
-
-
-
-/*
-RNG rng(12345);
-void findCentroid(Mat binImage, vector<vector<Point>> contours)
-{
-	cvtColor(binImage, colorImage, CV_GRAY2BGR, 3);
-
-	vector<Moments> mu;
-	vector<Rect> rects;
-	for (unsigned int i = 0; i < contours.size(); i++)
-	{
-		if (moments(contours[i], false).m00 >= Settings::getE()) { //If contour is big enough
-			mu.push_back(moments(contours[i], false));
-			
-		}
-	}
-
-
-	vector<Point2f> mc;
-	for (Moments m : mu)
-	{
-		mc.push_back(Point2f(m.m10 / m.m00, m.m01 / m.m00));
-	}
-
-	for (Point2f p : mc)
-	{
-		ellipse(colorImage, p, Size(40, 40), 0, 0, 360, Scalar(0, 255, 0), 1);
-	}
-	
-
-
-}
-
-
-*/
