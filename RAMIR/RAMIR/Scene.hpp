@@ -11,13 +11,14 @@ ________________________________
 |_______________|_______________|
 */
 
-#pragma once
+//#pragma once
 #ifndef SCENE_HPP
 #define SCENE_HPP
 
 #include <fstream>
 #include <sstream>
 #include "Tracker.hpp"
+#include "Blob.hpp"
 
 
 #include <opencv2\core.hpp>

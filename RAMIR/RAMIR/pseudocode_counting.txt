@@ -31,7 +31,14 @@
 //									[CHECK] - controlled with the global variable minTrackToBeCounted
 //
 //	(9)	manyBlobs on one place	 	Can there be many blobs/trackers on same place. Had 4 trackers on one blob in debugging
-//									[] - must insert in trackervector from one side and get from one
+//									[CHECK] - must insert in trackervector from one side and get from one
+//
+//	(10) HSV					 	Test backgroundsubtraction in HSV
+//									[] - 
+//
+//	(11) Elipse/rect as filter	 	Add an alternative to erode-dilate-filter that takes an object and tries to fit it inside the blobs. Will this make the algorithm faster?
+//									[] - 
+//
 //
 //
 //Emil A

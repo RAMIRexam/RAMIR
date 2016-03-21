@@ -1,4 +1,3 @@
-#pragma once
 #ifndef MYWINDOWS_HPP
 #define MYWINDOWS_HPP
 

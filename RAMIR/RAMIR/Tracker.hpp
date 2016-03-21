@@ -1,13 +1,13 @@
-#pragma once
 #ifndef TRACKER_HPP
 #define TRACKER_HPP
 
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include "Scene.hpp"
 #include "Blob.hpp"
 #include "Definitions.hpp"
-#include "Scene.hpp"
+
 
 #include <opencv2\core.hpp>
 #include <opencv2\highgui.hpp>
@@ -20,8 +20,7 @@ using namespace std;
 class Tracker {
 
 public:
-
-	Tracker(Blob blob, int trackerLife, Scene* sce);
+	Tracker(Blob blob, int trackerLife, Scene* scene);
 	~Tracker();
 
 	int getDuration();

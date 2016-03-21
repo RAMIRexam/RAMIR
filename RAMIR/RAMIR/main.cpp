@@ -5,6 +5,7 @@ Del1 i Examensarbete - implementering av artikeln "Automatic counting of interac
 Emil Andersson and Niklas Schedin 
 */
 
+
 #include <stdlib.h>
 #include <iostream>
 #include <Windows.h>
@@ -46,12 +47,16 @@ int leftMovCnt;													//Person moved from right to left detected this many
 int trackerLife;												//How many images its accaptable for a tracker to not find a belonging blob
 int minTrackToBeCounted;										//How many tracks an object has to be tracked before it accepted into the ACTracker
 
+
 bool paintRect = true;
+
+bool erodeFilter = true;										//Sets which filter that shall be used	
+bool elipseFilter = false;										//
 
 
 int main()
 {
-	Mat frame, prevBG, bgsub, erode, dilate, gray, temp, hist1, hist2, lastHist, tempHist, lastROI;
+	Mat frame, prevBG, bgsub, erode, dilate, gray, temp, hist1, hist2, lastHist, tempHist, lastROI, filterResult;
 	Rect lastRect;
 
 	Settings::loadSettings();
@@ -63,7 +68,10 @@ int main()
 	trackerLife = 4;
 	minTrackToBeCounted = 0;
 
-	String video = "videoplayback2.mp4";
+	
+
+
+	String video = "C:\\Users\\Emil\\Videos\\humanwalk.mp4";
 	VideoCapture cap(video);
 
 	if (!cap.isOpened())
@@ -86,15 +94,12 @@ int main()
 	pMOG->apply(frame, bgsub); //TESTING!
 	//------------------------------------------------------
 
-	scene = Scene(frame.cols/2 , 0, frame.cols / 2, frame.rows, frame);			//frame is not used as ROI yet (whithinROI-check not implemented)
-
 	Settings::init(&pMOG);
 
 	while (true)
 	{	
 		
 		cap >> frame;
-		verticalEelinePos = frame.cols / 2;										//User option, where shall the eeline be placed?
 
 		if (frame.empty())
 		{
@@ -105,8 +110,42 @@ int main()
 			
 			cap >> frame;
 		}
+
+		/**********************************/
+		Mat out;																//Resize the image
+		double divider = 3;														//
+																				//
+		int width = frame.cols / divider;										//
+		int height = frame.rows / divider;										//
+																				//
+		Size size(width, height);												//
+		resize(frame, out, size);												//
+		/**********************************/
+
+
+		int widthDivider = 3;													//sets the ROI's width
+		int heightDivider = 10;													//sets the ROI's height
+		
+		int trackingROI_x = out.cols / widthDivider;							//Define the coordinates for the ROI defined by the user
+		int trackingROI_y = out.rows / heightDivider;
+		int trackingROI_width = out.cols - ((out.cols / widthDivider)*2);
+		int trackingROI_height = out.rows - ((out.rows / heightDivider)*2);
+
+
+		Rect trackingRect(trackingROI_x, trackingROI_y, trackingROI_width, trackingROI_height);		//create a rect with the coordinates of the ROIs defined by the user
+		Mat trackingROI = out.clone();
+		trackingROI(trackingRect);												//The ROI defined by the user. Outside of this ROI the blobs isn't tracked.
+
+
+		verticalEelinePos = out.cols / 2;										//User option, where shall the eeline be placed?
+		scene = Scene(out.cols / 2, 0, out.cols / 2, out.rows, out);			//frame is not used as ROI yet (whithinROI-check not implemented)
+
+
+
+
+
 		prevBG = bgsub;
-		pMOG->apply(frame, bgsub);
+		pMOG->apply(trackingROI, bgsub);												//Set which image that shall be processed.
 
 
 		//double val = compareHist(hist1, hist2, CV_COMP_BHATTACHARYYA);
@@ -115,12 +154,51 @@ int main()
 
 		windows.feedImages("BGS", bgsub);
 
-		cv::erode(bgsub, erode, Settings::getErodeElement());
-		cv::dilate(erode, dilate, Settings::getDilateElement());
 
-		cvtColor(dilate, colorImage, CV_GRAY2BGR, 3);
+		assert(erodeFilter || elipseFilter);												//Asserts that one filter is chosen
 
-		vector<vector<Point>> contours = myFindContours(dilate);		//function uses findContours() to get all contours in the image
+
+		if (erodeFilter) {
+			cv::erode(bgsub, erode, Settings::getErodeElement());
+			cv::dilate(erode, filterResult, Settings::getDilateElement());					//filterResult is the dilatad image
+		}
+
+
+		
+		if (elipseFilter) {
+
+			filterResult = bgsub.clone();
+
+			vector<vector<Point>> elipseContours;
+			findContours(bgsub, elipseContours, RETR_LIST, CHAIN_APPROX_NONE);
+
+			for (size_t i = 0; i < elipseContours.size(); i++){
+				
+				size_t count = elipseContours[i].size();
+				if (count < 6)
+					continue;
+
+				Mat pointsf;
+				Mat(elipseContours[i]).convertTo(pointsf, CV_32F);
+				RotatedRect box = fitEllipse(pointsf);
+
+				if (MAX(box.size.width, box.size.height) > MIN(box.size.width, box.size.height) * 30)
+					continue;
+				drawContours(filterResult, elipseContours, (int)i, Scalar::all(255), 1, 8);
+
+				ellipse(filterResult, box, Scalar(0, 0, 255), 1, LINE_AA);
+				ellipse(filterResult, box.center, box.size*0.5f, box.angle, 0, 360, Scalar(0, 255, 255), 1, LINE_AA);
+				Point2f vtx[4];
+				box.points(vtx);
+				for (int j = 0; j < 4; j++)
+					line(filterResult, vtx[j], vtx[(j + 1) % 4], Scalar(0, 255, 0), 1, LINE_AA);
+			
+			}
+		}
+
+		
+		cvtColor(filterResult, colorImage, CV_GRAY2BGR, 3);									//convert grayscale image to colorimage
+		vector<vector<Point>> contours = myFindContours(filterResult);						//function uses findContours() to get all contours in the image
 		vector<Blob> blobs = createBlobs(frame, contours);				//create blobs (ROI, RECT, HIST) from all rects
 
 		trackers = tracking(blobs);										//tracks the blobs
@@ -130,8 +208,12 @@ int main()
 
 		
 
-																		//Paint entry/exit-line
-		line(colorImage, Point(verticalEelinePos, 0), Point(verticalEelinePos, colorImage.rows), Scalar(255, 0, 0), 2);
+		//Paint ROI defined by user
+		rectangle(colorImage, trackingRect.tl(), trackingRect.br(), Scalar(255, 255, 255), 2, 8, 0);
+
+		//Paint entry/exit-line. the ROI defined by the user sets the upper and lower limits.
+		line(colorImage, Point(verticalEelinePos, trackingRect.y), Point(verticalEelinePos, (trackingRect.y + trackingRect.height)), Scalar(255, 0, 0), 2);
+
 
 		//Paint centroid
 		//ellipse(colorImage, p, Size(40, 40), 0, 0, 360, Scalar(0, 255, 0), 1);
@@ -141,21 +223,13 @@ int main()
 
 		//namedWindow("Window", WINDOW_AUTOSIZE);
 		//namedWindow("BGS", WINDOW_AUTOSIZE);
-		namedWindow("Contours", CV_WINDOW_AUTOSIZE);
+		//namedWindow("Contours", CV_WINDOW_AUTOSIZE);
 		
-		Mat out;
-		double divider = 2.2;
 
-		int width = colorImage.cols / divider;
-		int height = colorImage.rows / divider;
-
-		Size size(width, height);
-
-		resize(colorImage, out, size);
+		Mat resultImage = colorImage | out;								//merge the original image and the processed image
 
 		moveWindow("Windows", 0, 0);
-		imshow("Windows", out);
-
+		imshow("Windows", resultImage);									//Show the result image.
 
 
 		
@@ -211,8 +285,8 @@ void paintTrackerinfo() {
 
 
 	//Paints right and left counters in upper middle of the image
-	putText(colorImage, "Right Counter: " + to_string(rightMovCnt), Point(500, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
-	putText(colorImage, "Left Counter: " + to_string(leftMovCnt), Point(500, 40), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
+	putText(colorImage, "Right Counter: " + to_string(rightMovCnt), Point(100, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
+	putText(colorImage, "Left Counter: " + to_string(leftMovCnt), Point(100, 40), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
 
 
 	//Print how many ACTrackers there is

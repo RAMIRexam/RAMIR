@@ -12,7 +12,6 @@ ________________________________
 
 */
 
-#pragma once
 #ifndef BLOB_HPP
 #define BLOB_HPP
 
