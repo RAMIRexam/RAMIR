@@ -50,8 +50,8 @@ int minTrackToBeCounted;										//How many tracks an object has to be tracked 
 
 bool paintRect = true;
 
-bool erodeFilter = true;										//Sets which filter that shall be used	
-bool elipseFilter = false;										//
+bool erodeFilter = false;										//Sets which filter that shall be used	
+bool elipseFilter = true;										//
 
 
 int main()
@@ -167,33 +167,17 @@ int main()
 		
 		if (elipseFilter) {
 
-			filterResult = bgsub.clone();
+			int kernelSize = 3;																//Width and height on kernel which will be convolved with the backgroundsubtracted image
+			Mat temp1;
+			Mat temp2;
 
-			vector<vector<Point>> elipseContours;
-			findContours(bgsub, elipseContours, RETR_LIST, CHAIN_APPROX_NONE);
-
-			for (size_t i = 0; i < elipseContours.size(); i++){
-				
-				size_t count = elipseContours[i].size();
-				if (count < 6)
-					continue;
-
-				Mat pointsf;
-				Mat(elipseContours[i]).convertTo(pointsf, CV_32F);
-				RotatedRect box = fitEllipse(pointsf);
-
-				if (MAX(box.size.width, box.size.height) > MIN(box.size.width, box.size.height) * 30)
-					continue;
-				drawContours(filterResult, elipseContours, (int)i, Scalar::all(255), 1, 8);
-
-				ellipse(filterResult, box, Scalar(0, 0, 255), 1, LINE_AA);
-				ellipse(filterResult, box.center, box.size*0.5f, box.angle, 0, 360, Scalar(0, 255, 255), 1, LINE_AA);
-				Point2f vtx[4];
-				box.points(vtx);
-				for (int j = 0; j < 4; j++)
-					line(filterResult, vtx[j], vtx[(j + 1) % 4], Scalar(0, 255, 0), 1, LINE_AA);
+			temp1 = bgsub.clone();
+			threshold(temp1, temp2, 100, 1, THRESH_BINARY);									//temp_bgsub will contain 0 or 255 values
 			
-			}
+			Mat kernel = Mat::ones(kernelSize, kernelSize, CV_32F);							//Construct kernel that will be convolved with the image
+			filter2D(temp2, filterResult, -1, kernel);										//Conolution on BGS-image and kernel
+			
+			getchar();
 		}
 
 		
