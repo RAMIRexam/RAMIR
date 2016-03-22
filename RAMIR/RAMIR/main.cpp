@@ -34,6 +34,8 @@ vector<Blob> createBlobs(Mat image, vector<vector<Point>> contours);
 vector<Tracker*> intersectionTest(vector<Blob> blobs, vector<Tracker*> trackers);
 vector<Tracker*> tracking(vector<Blob> blobs);
 vector<Tracker*> trackerSurvivalTest(vector<Tracker*> trackers);
+string type2str(int type);
+
 void countTrackers();
 void paintTrackerinfo();
 
@@ -167,17 +169,38 @@ int main()
 		
 		if (elipseFilter) {
 
-			int kernelSize = 3;																//Width and height on kernel which will be convolved with the backgroundsubtracted image
+			filterResult = Mat::zeros(bgsub.size(), CV_8UC1);
+
+			const int kernelSize = 3;																//Width and height on kernel which will be convolved with the backgroundsubtracted image
+			const int kernelArea = kernelSize * kernelSize;
+			const double accPerc = 0.5;															//(accPerc*100 = Percentage) If the convolution divided by the kernelArea is greater than this value, something will be painted on the resultImage.
+			const double limIntensVal = kernelArea * accPerc;
+			
+
 			Mat temp1;
 			Mat temp2;
+			Mat temp3;
 
 			temp1 = bgsub.clone();
 			threshold(temp1, temp2, 100, 1, THRESH_BINARY);									//temp_bgsub will contain 0 or 255 values
 			
-			Mat kernel = Mat::ones(kernelSize, kernelSize, CV_32F);							//Construct kernel that will be convolved with the image
-			filter2D(temp2, filterResult, -1, kernel);										//Conolution on BGS-image and kernel
+			Mat kernel = Mat::ones(kernelSize, kernelSize, CV_8UC1);							//Construct kernel that will be convolved with the image
+			filter2D(temp2, temp3, -1, kernel);									//Conolution on BGS-image and kernel
 			
-			getchar();
+
+			const int outRectSize = 5;
+
+			for (int i = outRectSize; i < temp3.cols - outRectSize; i++) {
+				for (int k = outRectSize; k < temp3.rows - outRectSize; k++) {
+					Scalar test = temp3.at<uchar>(k, i);
+
+					if (test[0] > limIntensVal) {
+						rectangle(filterResult, Point(i,k), Point(i + outRectSize, k + outRectSize), Scalar(255, 255, 255), 2, -1, 0);
+					}
+				}
+			}
+
+			//getchar();
 		}
 
 		
@@ -604,3 +627,26 @@ vector<vector<Point>> myFindContours(Mat src) {
 	return contours;
 }
 
+//Function for determining which type an matrix is.
+string type2str(int type) {
+	string r;
+
+	uchar depth = type & CV_MAT_DEPTH_MASK;
+	uchar chans = 1 + (type >> CV_CN_SHIFT);
+
+	switch (depth) {
+	case CV_8U:  r = "8U"; break;
+	case CV_8S:  r = "8S"; break;
+	case CV_16U: r = "16U"; break;
+	case CV_16S: r = "16S"; break;
+	case CV_32S: r = "32S"; break;
+	case CV_32F: r = "32F"; break;
+	case CV_64F: r = "64F"; break;
+	default:     r = "User"; break;
+	}
+
+	r += "C";
+	r += (chans + '0');
+
+	return r;
+}
