@@ -49,6 +49,11 @@ int leftMovCnt;													//Person moved from right to left detected this many
 int trackerLife;												//How many images its accaptable for a tracker to not find a belonging blob
 int minTrackToBeCounted;										//How many tracks an object has to be tracked before it accepted into the ACTracker
 
+double runTime;													//Variables for counting FPS and cycletime
+int FPS;														//
+int lastFPS;													//
+vector<int> FPShistory;											//
+int FPSmean;													//
 
 bool paintRect = true;
 
@@ -70,8 +75,9 @@ int main()
 	trackerLife = 4;
 	minTrackToBeCounted = 0;
 
-	
-
+	runTime = 0;
+	FPS = 0;
+	lastFPS = 0;
 
 	String video = "C:\\Users\\Emil\\Videos\\humanwalk.mp4";
 	VideoCapture cap(video);
@@ -100,7 +106,23 @@ int main()
 
 	while (true)
 	{	
-		
+		if (runTime > 1) {														//If one second has past
+			lastFPS = FPS;
+			FPShistory.push_back(FPS);
+			
+			for (int fps : FPShistory) 
+				FPSmean += fps;
+			
+			FPSmean /= FPShistory.size();
+
+
+			FPS = 0;
+			runTime = 0;
+		}
+		else { FPS++; }
+		double t = (double)getTickCount();										//Start timer clock. Used to calculate FPS
+
+
 		cap >> frame;
 
 		if (frame.empty())
@@ -147,7 +169,7 @@ int main()
 
 
 		prevBG = bgsub;
-		pMOG->apply(trackingROI, bgsub);												//Set which image that shall be processed.
+		pMOG->apply(trackingROI, bgsub);											//Set which image that shall be processed.
 
 
 		//double val = compareHist(hist1, hist2, CV_COMP_BHATTACHARYYA);
@@ -157,48 +179,51 @@ int main()
 		windows.feedImages("BGS", bgsub);
 
 
-		assert(erodeFilter || elipseFilter);												//Asserts that one filter is chosen
+		assert(erodeFilter || elipseFilter);										//Asserts that one filter is chosen
 
 
 		if (erodeFilter) {
 			cv::erode(bgsub, erode, Settings::getErodeElement());
-			cv::dilate(erode, filterResult, Settings::getDilateElement());					//filterResult is the dilatad image
+			cv::dilate(erode, filterResult, Settings::getDilateElement());			//filterResult is the dilatad image
 		}
 
 
 		
 		if (elipseFilter) {
 
-			filterResult = Mat::zeros(bgsub.size(), CV_8UC1);
-
-			const int kernelSize = 3;																//Width and height on kernel which will be convolved with the backgroundsubtracted image
-			const int kernelArea = kernelSize * kernelSize;
-			const double accPerc = 0.5;															//(accPerc*100 = Percentage) If the convolution divided by the kernelArea is greater than this value, something will be painted on the resultImage.
-			const double limIntensVal = kernelArea * accPerc;
-			
-
 			Mat temp1;
 			Mat temp2;
 			Mat temp3;
 
+			filterResult = Mat::zeros(bgsub.size(), CV_8UC1);
 			temp1 = bgsub.clone();
-			threshold(temp1, temp2, 100, 1, THRESH_BINARY);									//temp_bgsub will contain 0 or 255 values
+
+
+			const int kernelSize = 9;												//Width and height on kernel which will be convolved with the backgroundsubtracted image
+			const int kernelArea = kernelSize * kernelSize;
+			const double accPerc = 0.5;												//(accPerc*100 = Percentage) If the convolution divided by the kernelArea is greater than this value, something will be painted on the resultImage.
+			const double limIntensVal = kernelArea * accPerc;
 			
-			Mat kernel = Mat::ones(kernelSize, kernelSize, CV_8UC1);							//Construct kernel that will be convolved with the image
-			filter2D(temp2, temp3, -1, kernel);									//Conolution on BGS-image and kernel
+			
+			threshold(temp1, temp2, 100, 1, THRESH_BINARY);							//temp_bgsub will contain 0 or 255 values
+			
+			Mat kernel = Mat::ones(kernelSize, kernelSize, CV_8UC1);				//Construct kernel that will be convolved with the image
+			filter2D(temp2, temp3, -1, kernel);										//Conolution on BGS-image and kernel
 			
 
-			const int outRectSize = 5;
+			const int paintRect_size = 4;
 
-			for (int i = outRectSize; i < temp3.cols - outRectSize; i++) {
-				for (int k = outRectSize; k < temp3.rows - outRectSize; k++) {
+			
+			for (int i = paintRect_size; i < temp3.cols - paintRect_size; i++) {
+				for (int k = paintRect_size; k < temp3.rows - paintRect_size; k++) {
 					Scalar test = temp3.at<uchar>(k, i);
 
 					if (test[0] > limIntensVal) {
-						rectangle(filterResult, Point(i,k), Point(i + outRectSize, k + outRectSize), Scalar(255, 255, 255), 2, -1, 0);
+						rectangle(filterResult, Point(i,k), Point(i + paintRect_size, k + paintRect_size), Scalar(255, 255, 255), CV_FILLED, 1, 0);
 					}
 				}
 			}
+			
 
 			//getchar();
 		}
@@ -259,6 +284,10 @@ int main()
 				return 0;
 				break;
 		}
+
+
+		t = ((double)getTickCount() - t) / getTickFrequency();			//how long time a cycle takes in seconds
+		runTime += t;													//how long time the program has run this cycle
 	}
 	return 0;
 }
@@ -294,6 +323,10 @@ void paintTrackerinfo() {
 	//Paints right and left counters in upper middle of the image
 	putText(colorImage, "Right Counter: " + to_string(rightMovCnt), Point(100, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
 	putText(colorImage, "Left Counter: " + to_string(leftMovCnt), Point(100, 40), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
+
+	//Paints frames per second, FPS
+	putText(colorImage, "FPS: " + to_string(lastFPS), Point(100, 60), FONT_HERSHEY_DUPLEX, 0.5, Scalar(100, 100, 255), 1);
+	putText(colorImage, "Mean FPS: " + to_string(FPSmean), Point(100, 80), FONT_HERSHEY_DUPLEX, 0.5, Scalar(255, 100, 100), 1);
 
 
 	//Print how many ACTrackers there is
