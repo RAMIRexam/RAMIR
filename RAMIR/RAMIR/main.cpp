@@ -35,6 +35,8 @@ vector<Tracker*> intersectionTest(vector<Blob> blobs, vector<Tracker*> trackers)
 vector<Tracker*> tracking(vector<Blob> blobs);
 vector<Tracker*> trackerSurvivalTest(vector<Tracker*> trackers);
 string type2str(int type);
+double startClocking();
+void stopClocking(double t);
 
 void countTrackers();
 void paintTrackerinfo();
@@ -57,8 +59,8 @@ int FPSmean;													//
 
 bool paintRect = true;
 
-bool erodeFilter = false;										//Sets which filter that shall be used	
-bool elipseFilter = true;										//
+bool erodeFilter = true;										//Sets which filter that shall be used	
+bool elipseFilter = false;										//
 
 
 int main()
@@ -106,22 +108,8 @@ int main()
 
 	while (true)
 	{	
-		if (runTime > 1) {														//If one second has past
-			lastFPS = FPS;
-			FPShistory.push_back(FPS);
-			
-			for (int fps : FPShistory) 
-				FPSmean += fps;
-			
-			FPSmean /= FPShistory.size();
-
-
-			FPS = 0;
-			runTime = 0;
-		}
-		else { FPS++; }
-		double t = (double)getTickCount();										//Start timer clock. Used to calculate FPS
-
+		
+		double cycleTime = startClocking();														//Starts the clock in order to calculate FPS
 
 		cap >> frame;
 
@@ -133,6 +121,7 @@ int main()
 			pMOG = createBackgroundSubtractorMOG2(Settings::getA(), (((double)Settings::getB()) / 10), false);
 			
 			cap >> frame;
+			
 		}
 
 		/**********************************/
@@ -285,9 +274,7 @@ int main()
 				break;
 		}
 
-
-		t = ((double)getTickCount() - t) / getTickFrequency();			//how long time a cycle takes in seconds
-		runTime += t;													//how long time the program has run this cycle
+		stopClocking(cycleTime);													//Stops the cycle timer. (A part in the process of calculating FPS)
 	}
 	return 0;
 }
@@ -657,7 +644,14 @@ vector<vector<Point>> myFindContours(Mat src) {
 
 	findContours(src_cpy, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 
-	return contours;
+	//Check if the area on the contour is big enough
+	vector<vector<Point>> retContours;
+	for (unsigned int i = 0; i < contours.size(); i++){
+		if (moments(contours[i], false).m00 >= Settings::getE())
+			retContours.push_back(contours[i]);
+	}
+
+	return retContours;
 }
 
 //Function for determining which type an matrix is.
@@ -682,4 +676,32 @@ string type2str(int type) {
 	r += (chans + '0');
 
 	return r;
+}
+
+/**************************************************************************************************************************************
+/	Starts the clock in the beginning of the program in order to calculate FPS. stopClocking() shall be called when the cycle is done
+**************************************************************************************************************************************/
+double startClocking() {
+	if (runTime > 1) {												//If one second has past
+		lastFPS = FPS;
+		FPShistory.push_back(FPS);
+
+		for (int fps : FPShistory)
+			FPSmean += fps;
+
+		FPSmean /= FPShistory.size();
+
+
+		FPS = 0;
+		runTime = 0;
+	}
+	else { FPS++; }
+	return (double)getTickCount();								//Start timer clock. Used to calculate FPS
+}
+/**************************************************************************************************************************************
+/	Stops the clock in the end of the program in order to calculate FPS. startClocking() shall be called when the cycle starts
+**************************************************************************************************************************************/
+void stopClocking(double t) {
+	t = ((double)getTickCount() - t) / getTickFrequency();			//how long time a cycle takes in seconds
+	runTime += t;													//how long time the program has run this cycle
 }
