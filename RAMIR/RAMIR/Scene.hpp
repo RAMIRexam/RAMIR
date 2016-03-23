@@ -11,7 +11,6 @@ ________________________________
 |_______________|_______________|
 */
 
-//#pragma once
 #ifndef SCENE_HPP
 #define SCENE_HPP
 
@@ -27,19 +26,19 @@ ________________________________
 #include <opencv2\video\background_segm.hpp>
 
 using namespace cv;
-
+using namespace std;
 
 class Scene {
 
 public:
 	Scene(int arg_sx, int arg_sy, int arg_ex, int arg_ey, Mat ROI);
 	Scene();															//Used to enable initialation as global variable in main
-	~Scene();									
+	~Scene();
 	int LSCheck(Blob b);												//Line-side check, checks on which side of the line an object is
-	//bool WRCheck(Tracker* t);											//Within ROI check, checks if the tracked blob is within the ROI defined by the user
+																		//bool WRCheck(Tracker* t);											//Within ROI check, checks if the tracked blob is within the ROI defined by the user
 
 
-	
+
 
 private:
 	//Entry/Exit-line in ROI

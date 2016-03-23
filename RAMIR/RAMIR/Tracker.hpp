@@ -1,10 +1,10 @@
 #ifndef TRACKER_HPP
 #define TRACKER_HPP
 
+#include "Scene.hpp"
 #include <fstream>
 #include <sstream>
 #include <iostream>
-#include "Scene.hpp"
 #include "Blob.hpp"
 #include "Definitions.hpp"
 
@@ -20,7 +20,7 @@ using namespace std;
 class Tracker {
 
 public:
-	Tracker(Blob blob, int trackerLife, Scene* scene);
+	Tracker(Scene* scene, Blob blob, int arg_trackerLife);
 	~Tracker();
 
 	int getDuration();
@@ -30,7 +30,7 @@ public:
 	void fillWithBlob(Blob b);
 	void fillWithEmptyBlob();
 
-	
+
 
 	int curSOL;						//current Side Of Line, which side of the line the object currently is
 	int staSOL;						//start Side Of Line, which side of the line the object was when it was first detected

@@ -23,7 +23,7 @@ using namespace cv;
 using namespace std;
 
 Ptr<BackgroundSubtractor> pMOG;
-Mat colorImage, filterResult;													//Final imageprocessing image, text is painted in this image
+Mat filterResult;													//Final imageprocessing image, text is painted in this image
 
 int verticalEelinePos;											//vertical entry/exit-line position in the image. Value can be changed below.
 
@@ -36,18 +36,21 @@ vector<Tracker*> tracking(vector<Blob> blobs);
 vector<Tracker*> trackerSurvivalTest(vector<Tracker*> trackers);
 string type2str(int type);
 Mat elipseFilter(Mat bgsub);
+Mat resizeImage(Mat frame, double divider);
 
 
 double startClocking();
 void stopClocking(double t);
 
 void countTrackers();
-void paintTrackerinfo();
+void paintTrackerinfo(Mat filterResult);
 
 vector<Tracker*> trackers;										//Contains trackers which hasn't been counted yet.
 vector<Tracker*> ACTrackers;									//Already counted trackers. When a tracker is counted it shall be moved from trackers to this vector
 
+double _imageDivider = 3;
 Scene scene;
+Rect trackingRect;
 
 int rightMovCnt;												//Person moved from left to right detected this many times
 int leftMovCnt;													//Person moved from right to left detected this many times
@@ -69,39 +72,37 @@ bool elipseFilter_BOOL;											//
 int main()
 {	
 	
+	//Print which filters that are available
 	namedWindow("windows");
 	Mat infoImage = Mat::zeros(200, 600, CV_8UC1);
-	
 	putText(infoImage, "Please chose filter: " , Point(20, 40), FONT_HERSHEY_DUPLEX, 1, Scalar(255, 255, 255), 1);
 	putText(infoImage, "E - Erode/Dilate filter: " , Point(20, 80), FONT_HERSHEY_DUPLEX, 1, Scalar(255, 255, 255), 1);
 	putText(infoImage, "R - Rectangle filter: " , Point(20, 120), FONT_HERSHEY_DUPLEX, 1, Scalar(255, 255, 255), 1);
-	
 	moveWindow("windows", 0, 0);
 	imshow("windows", infoImage);
+	infoImage.release();
 
 
-
+	//Choose filter
 	switch (waitKey(0))
 	{
 		//E-button, Erode/Dilate filter button
 	case 101:
 		erodeFilter_BOOL = true;										//Set Erode/Dilate filter
 		elipseFilter_BOOL = false;										//
-		
 		break;
 
 		//R-button, Elipse filter button
 	case 114:
 		erodeFilter_BOOL = false;										//
 		elipseFilter_BOOL = true;										//Set Elipse filter
-
 		break;
 	}
 
 
 
 
-	Mat frame, prevBG, bgsub, erode, dilate, gray, temp, hist1, hist2, lastHist, tempHist, lastROI;
+	Mat frame, prevBG, bgsub, erode;
 	Rect lastRect;
 
 	Settings::loadSettings();
@@ -124,7 +125,6 @@ int main()
 		return -1;
 
 
-
 	pMOG = createBackgroundSubtractorMOG2(Settings::getA(), (((double)Settings::getB()) / 10), false);
 
 
@@ -142,52 +142,67 @@ int main()
 
 	Settings::init(&pMOG);
 
+
+	/*************************************************************************************************************************************/
+	//	Run ones outside the loop to set the image layout
+	//
+
+	cap >> frame;
+	Mat out = resizeImage(frame, _imageDivider);
+
+	int widthDivider = 3;															//sets the ROI's width (ROI defined by the user)
+	int heightDivider = 10;															//sets the ROI's height (ROI defined by the user)
+
+	int trackingROI_x = out.cols / widthDivider;									//Define the coordinates for the ROI defined by the user
+	int trackingROI_y = out.rows / heightDivider;
+	
+	int	notTrackedWidth = (out.cols / widthDivider) * 2;							//Used to merge the filterResult-Mat and the raw image
+	int trackingROI_width = out.cols - notTrackedWidth;
+	int trackingROI_height = out.rows - ((out.rows / heightDivider) * 2);
+
+	verticalEelinePos = out.cols / 2;												//User option, where shall the eeline be placed?
+	
+
+	Rect ROI_Rect = Rect(trackingROI_x, trackingROI_y, trackingROI_width, trackingROI_height);
+	Mat ROI_DefbyUser = out(ROI_Rect);
+	
+	
+	scene = Scene(verticalEelinePos, trackingROI_y, verticalEelinePos, trackingROI_y + trackingROI_height, ROI_DefbyUser);
+	
+	//OLD
+	//scene = Scene(out.cols / 2, 0, out.cols / 2, out.rows, out);					//frame is not used as ROI yet (whithinROI-check not implemented)
+	/**************************************************************************************************************************************/
+
+	
+
 	while (true)
 	{	
-		
 		double cycleTime = startClocking();														//Starts the clock in order to calculate FPS
 
 		cap >> frame;
 
-		if (frame.empty())
-		{
+		if (frame.empty()){																		//Used when the end of the video is reached
 			cap.release();
 			cap.open(video);
 			
 			pMOG = createBackgroundSubtractorMOG2(Settings::getA(), (((double)Settings::getB()) / 10), false);
 			
 			cap >> frame;
-			
 		}
 
-		/**********************************/
-		Mat out;																//Resize the image
-		double divider = 3;														//
-																				//
-		int width = frame.cols / divider;										//
-		int height = frame.rows / divider;										//
-																				//
-		Size size(width, height);												//
-		resize(frame, out, size);												//
-		/**********************************/
-
-
-		int widthDivider = 3;													//sets the ROI's width (ROI defined by the user)
-		int heightDivider = 10;													//sets the ROI's height (ROI defined by the user)
 		
-		int trackingROI_x = out.cols / widthDivider;							//Define the coordinates for the ROI defined by the user
-		int trackingROI_y = out.rows / heightDivider;
-		int trackingROI_width = out.cols - ((out.cols / widthDivider)*2);
-		int trackingROI_height = out.rows - ((out.rows / heightDivider)*2);
+		Mat out = resizeImage(frame, _imageDivider);													//Resizes the raw image.
+		//colorImage = Mat::zeros(out.rows, out.cols, CV_8UC3);
+
+		trackingRect = Rect(trackingROI_x, trackingROI_y, trackingROI_width, trackingROI_height);		//create a rect with the coordinates of the ROIs defined by the user
+		//Mat trackingROI = out.clone();
+		//trackingROI(trackingRect);												//The ROI defined by the user. Outside of this ROI the blobs isn't tracked.
+
+		Mat trackingROI = out(trackingRect);
 
 
-		Rect trackingRect(trackingROI_x, trackingROI_y, trackingROI_width, trackingROI_height);		//create a rect with the coordinates of the ROIs defined by the user
-		Mat trackingROI = out.clone();
-		trackingROI(trackingRect);												//The ROI defined by the user. Outside of this ROI the blobs isn't tracked.
 
-
-		verticalEelinePos = out.cols / 2;										//User option, where shall the eeline be placed?
-		scene = Scene(out.cols / 2, 0, out.cols / 2, out.rows, out);			//frame is not used as ROI yet (whithinROI-check not implemented)
+		
 
 
 
@@ -207,40 +222,58 @@ int main()
 			cv::erode(bgsub, erode, Settings::getErodeElement());
 			cv::dilate(erode, filterResult, Settings::getDilateElement());			//filterResult is the dilatad image
 		}
-
 		if (elipseFilter_BOOL) {
 			filterResult = elipseFilter(bgsub);
 		}
 
 		
-		cvtColor(filterResult, colorImage, CV_GRAY2BGR, 3);									//convert grayscale image to colorimage
+		//cvtColor(filterResult, colorImage, CV_GRAY2BGR, 3);									//convert grayscale image to colorimage
 		vector<vector<Point>> contours = myFindContours(filterResult);						//function uses findContours() to get all contours in the image
-		vector<Blob> blobs = createBlobs(frame, contours);				//create blobs (ROI, RECT, HIST) from all rects
+		vector<Blob> blobs = createBlobs(trackingROI, contours);				//create blobs (ROI, RECT, HIST) from all rects
 
 		trackers = tracking(blobs);										//tracks the blobs
 		countTrackers();												//moves tracker objects from trackers to ACTrackers if they has passed the eeline
-		paintTrackerinfo();												//prints info about all detected trackers in the image
+		paintTrackerinfo(out);												//prints info about all detected trackers in the image
 		
 
 		
 
-		//Paint ROI defined by user
-		rectangle(colorImage, trackingRect.tl(), trackingRect.br(), Scalar(255, 255, 255), 2, 8, 0);
 
-		//Paint entry/exit-line. the ROI defined by the user sets the upper and lower limits.
-		line(colorImage, Point(verticalEelinePos, trackingRect.y), Point(verticalEelinePos, (trackingRect.y + trackingRect.height)), Scalar(255, 0, 0), 2);
+		Mat filterResult2;
+		cvtColor(filterResult, filterResult2, CV_GRAY2BGR, 3);
 
 
-		//Paint centroid
-		//ellipse(colorImage, p, Size(40, 40), 0, 0, 360, Scalar(0, 255, 0), 1);
+
+		Mat dd = out(trackingRect);
+		dd = dd | filterResult2;
 
 
+		/*
+		Mat showImage;
+		int extraBlackWidth = notTrackedWidth / 2;						//notTrackedWidth is the spaces on the left and on the right of the tracked area added together
+		Mat extraBlack = Mat::zeros(trackingROI_height, extraBlackWidth, CV_8UC1);
+		vector<Mat> mergeMats;
+		mergeMats.push_back(extraBlack);
+		mergeMats.push_back(filterResult);
+		mergeMats.push_back(extraBlack);
 		
+		hconcat(mergeMats, showImage);
 
-		Mat resultImage = colorImage | out;								//merge the original image and the processed image
+		//extraBlack = Mat::zeros(trackingROI_height, extraBlackWidth, CV_8UC1);
+
+		Mat test = showImage(Rect(100, 100, 100, 100));
+		//showImage = showImage | out;
+		*/
+
+
 
 		moveWindow("Windows", 0, 0);
-		imshow("Windows", resultImage);									//Show the result image.
+		imshow("Windows", out);									//Show the result image.
+
+
+
+
+
 
 
 
@@ -267,6 +300,20 @@ int main()
 		stopClocking(cycleTime);													//Stops the cycle timer. (A part in the process of calculating FPS)
 	}
 	return 0;
+}
+
+/**************************************************************************************************************************************
+/	Resizes an image. Greater value on argument "divider" gives a smaller image
+**************************************************************************************************************************************/
+Mat resizeImage(Mat frame, double divider) {
+	Mat out;																//Resize the image													//
+																			//
+	int width = frame.cols / divider;										//
+	int height = frame.rows / divider;										//
+																			//
+	Size size(width, height);												//
+	resize(frame, out, size);												//
+	return out;
 }
 
 Mat elipseFilter(Mat bgsub) {
@@ -311,7 +358,7 @@ Mat elipseFilter(Mat bgsub) {
 /	Paints how many times the trackers have found their blobs in the upper left corner
 /	Paints right and left counters in upper middle of the image
 **************************************************************************************************************************************/
-void paintTrackerinfo() {
+void paintTrackerinfo(Mat filterResult) {
 	
 	int dText = 20;
 	int trackername = 1;
@@ -324,33 +371,41 @@ void paintTrackerinfo() {
 
 		//Paints how many detections a tracker has made if it exceds or is equal to minDuration. Painted in upper left corner
 		if (t->getDuration() >= minDuration) {
-			putText(colorImage, "Tracker " + to_string(trackername) + ": Number detections " + to_string(t->getDuration()), Point(20, 20 + dText), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 0), 1);
+			putText(filterResult, "Tracker " + to_string(trackername) + ": Number detections " + to_string(t->getDuration()), Point(20, 20 + dText), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 0), 1);
 			dText += 20;
 			trackername++;
 
 			if (t->getDuration() > paintRectDuration) {
-				rectangle(colorImage, t->getLastBlob().getRect().tl(), t->getLastBlob().getRect().br(), Scalar(0, 0, 255), 2, 8, 0);
+				rectangle(filterResult, t->getLastBlob().getRect().tl(), t->getLastBlob().getRect().br(), Scalar(0, 0, 255), 2, 8, 0);
 			}
 		}
 	}
 
 
+	//Paint ROI defined by user
+	rectangle(filterResult, trackingRect.tl(), trackingRect.br(), Scalar(255, 255, 255), 2, 8, 0);
+
+	//Paint entry/exit-line. the ROI defined by the user sets the upper and lower limits.
+	line(filterResult, Point(verticalEelinePos, trackingRect.y), Point(verticalEelinePos, (trackingRect.y + trackingRect.height)), Scalar(255, 0, 0), 2);
+
+
+
 	//Paints right and left counters in upper middle of the image
-	putText(colorImage, "Right Counter: " + to_string(rightMovCnt), Point(100, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
-	putText(colorImage, "Left Counter: " + to_string(leftMovCnt), Point(100, 40), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
+	putText(filterResult, "Right Counter: " + to_string(rightMovCnt), Point(100, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
+	putText(filterResult, "Left Counter: " + to_string(leftMovCnt), Point(100, 40), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
 
 	//Paints frames per second, FPS
-	putText(colorImage, "FPS: " + to_string(lastFPS), Point(100, 60), FONT_HERSHEY_DUPLEX, 0.5, Scalar(100, 100, 255), 1);
-	putText(colorImage, "Mean FPS: " + to_string(FPSmean), Point(100, 80), FONT_HERSHEY_DUPLEX, 0.5, Scalar(255, 100, 100), 1);
+	putText(filterResult, "FPS: " + to_string(lastFPS), Point(100, 60), FONT_HERSHEY_DUPLEX, 0.5, Scalar(100, 100, 255), 1);
+	putText(filterResult, "Mean FPS: " + to_string(FPSmean), Point(100, 80), FONT_HERSHEY_DUPLEX, 0.5, Scalar(255, 100, 100), 1);
 
 
 	//Print how many ACTrackers there is
 	if (ACTrackers.size() == 0) {
-		putText(colorImage, "num ACTrackers: 0", Point(800, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(255, 0, 255), 1);
+		putText(filterResult, "num ACTrackers: 0", Point(800, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(255, 0, 255), 1);
 	}
 	else {
 		for (Tracker* t : ACTrackers) {
-			putText(colorImage, "num ACTrackers: " + to_string(ACTrackers.size()), Point(800, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(255, 0, 255), 1);
+			putText(filterResult, "num ACTrackers: " + to_string(ACTrackers.size()), Point(800, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(255, 0, 255), 1);
 		}
 	}
 }
@@ -425,7 +480,7 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 
 	if (trackers.size() == 0) {
 		for (Blob b : blobs) {										//No trackers exists. All blobs will turn to a tracker
-			Tracker *t = new Tracker(b, trackerLife, &scene);
+			Tracker *t = new Tracker(&scene, b, trackerLife);
 			t->processed = true;
 			trackers.push_back(t);
 
@@ -436,7 +491,7 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 		trackers = intersectionTest(blobs, trackers);				//there already exists trackers, intersectionTest will move blobs to trackers
 
 		for (Blob b : blobs) {										//iterate throught the rest of the blobs and create trackers for them
-			Tracker *t = new Tracker(b, trackerLife, &scene);
+			Tracker *t = new Tracker(&scene, b, trackerLife);
 			t->processed = true;
 			trackers.push_back(t);
 
@@ -655,7 +710,7 @@ vector<Rect> getAllRects(vector<vector<Point>> contours) {
 		
 		//paint the rectangle:
 		if(paintRect == true)
-			rectangle(colorImage, r.tl(), r.br(), Scalar(0, 0, 255), 2, 8, 0);
+			rectangle(filterResult, r.tl(), r.br(), Scalar(0, 0, 255), 2, 8, 0);
 	}
 	
 	return rects;

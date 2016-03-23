@@ -39,6 +39,9 @@
 //	(11) Elipse/rect as filter	 	Add an alternative to erode-dilate-filter that takes an object and tries to fit it inside the blobs. Will this make the algorithm faster?
 //									[] - 
 //
+//	(12) getBlobCent(), ROI/image	getBlobCent() returns the position of the blob in the ROI, LSCheck assumes that it returns it in the main image
+//									[] - 
+//
 //
 //
 //Emil A

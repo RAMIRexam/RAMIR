@@ -19,19 +19,19 @@ ________________________________
 /**************************************************************************************************************************************
 /	ARGUMENTS: entry/exit-line koordinates, region of interest
 **************************************************************************************************************************************/
-Scene::Scene(int arg_sx, int arg_sy, int arg_ex, int arg_ey, Mat ROI) {
-	
+Scene::Scene(int arg_sx, int arg_sy, int arg_ex, int arg_ey, Mat arg_ROI) {
+
 	assert(sx == ex);					//Debug, the line must be vertical
 	pauseForLineCheckDEBUG = true;		//Debug, se declaration
 
-	//sets the eeline-koordinates
+										//sets the eeline-koordinates
 	sx = arg_sx;
 	sy = arg_sy;
 	ex = arg_ex;
 	ey = arg_ey;
 
-	this->ROI = ROI;
-	
+	ROI = arg_ROI;
+
 
 }
 Scene::Scene() {}
@@ -56,7 +56,7 @@ int Scene::LSCheck(Blob b) {
 
 	assert(sx == ex);						//(1) DEBUG
 
-	if (blobx - sx < 0) {
+	if (blobx - ROI.cols/2 < 0) {
 		if (pauseForLineCheckDEBUG) {		//(2) DEBUG, 
 			pauseForLineCheckDEBUG = false;	//(2) DEBUG, PLEASE CHECK SO OBJECT REALLY IS ON LEFT SIDE (add breakpoint)
 		}

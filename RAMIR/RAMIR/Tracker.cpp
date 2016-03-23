@@ -10,7 +10,7 @@ _________________________________
 |_______________|________________|
 
 */
-Tracker::Tracker(Blob blob, int arg_trackerLife, Scene* scene) {
+Tracker::Tracker(Scene* scene, Blob blob, int arg_trackerLife) {
 	
 	fillWithBlob(blob);
 	duration = 1;
