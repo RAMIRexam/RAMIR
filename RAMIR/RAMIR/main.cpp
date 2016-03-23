@@ -23,7 +23,7 @@ using namespace cv;
 using namespace std;
 
 Ptr<BackgroundSubtractor> pMOG;
-Mat colorImage;													//Final imageprocessing image, text is painted in this image
+Mat colorImage, filterResult;													//Final imageprocessing image, text is painted in this image
 
 int verticalEelinePos;											//vertical entry/exit-line position in the image. Value can be changed below.
 
@@ -35,6 +35,9 @@ vector<Tracker*> intersectionTest(vector<Blob> blobs, vector<Tracker*> trackers)
 vector<Tracker*> tracking(vector<Blob> blobs);
 vector<Tracker*> trackerSurvivalTest(vector<Tracker*> trackers);
 string type2str(int type);
+Mat elipseFilter(Mat bgsub);
+
+
 double startClocking();
 void stopClocking(double t);
 
@@ -59,13 +62,46 @@ int FPSmean;													//
 
 bool paintRect = true;
 
-bool erodeFilter = true;										//Sets which filter that shall be used	
-bool elipseFilter = false;										//
+bool erodeFilter_BOOL;											//Defines which filter shall be used
+bool elipseFilter_BOOL;											//
 
 
 int main()
-{
-	Mat frame, prevBG, bgsub, erode, dilate, gray, temp, hist1, hist2, lastHist, tempHist, lastROI, filterResult;
+{	
+	
+	namedWindow("windows");
+	Mat infoImage = Mat::zeros(200, 600, CV_8UC1);
+	
+	putText(infoImage, "Please chose filter: " , Point(20, 40), FONT_HERSHEY_DUPLEX, 1, Scalar(255, 255, 255), 1);
+	putText(infoImage, "E - Erode/Dilate filter: " , Point(20, 80), FONT_HERSHEY_DUPLEX, 1, Scalar(255, 255, 255), 1);
+	putText(infoImage, "R - Rectangle filter: " , Point(20, 120), FONT_HERSHEY_DUPLEX, 1, Scalar(255, 255, 255), 1);
+	
+	moveWindow("windows", 0, 0);
+	imshow("windows", infoImage);
+
+
+
+	switch (waitKey(0))
+	{
+		//E-button, Erode/Dilate filter button
+	case 101:
+		erodeFilter_BOOL = true;										//Set Erode/Dilate filter
+		elipseFilter_BOOL = false;										//
+		
+		break;
+
+		//R-button, Elipse filter button
+	case 114:
+		erodeFilter_BOOL = false;										//
+		elipseFilter_BOOL = true;										//Set Elipse filter
+
+		break;
+	}
+
+
+
+
+	Mat frame, prevBG, bgsub, erode, dilate, gray, temp, hist1, hist2, lastHist, tempHist, lastROI;
 	Rect lastRect;
 
 	Settings::loadSettings();
@@ -136,8 +172,8 @@ int main()
 		/**********************************/
 
 
-		int widthDivider = 3;													//sets the ROI's width
-		int heightDivider = 10;													//sets the ROI's height
+		int widthDivider = 3;													//sets the ROI's width (ROI defined by the user)
+		int heightDivider = 10;													//sets the ROI's height (ROI defined by the user)
 		
 		int trackingROI_x = out.cols / widthDivider;							//Define the coordinates for the ROI defined by the user
 		int trackingROI_y = out.rows / heightDivider;
@@ -155,8 +191,6 @@ int main()
 
 
 
-
-
 		prevBG = bgsub;
 		pMOG->apply(trackingROI, bgsub);											//Set which image that shall be processed.
 
@@ -164,57 +198,18 @@ int main()
 		//double val = compareHist(hist1, hist2, CV_COMP_BHATTACHARYYA);
 		//double val2 = compareHist(hist1, hist2, CV_COMP_INTERSECT);
 		//cout << "Bhattacharyya: " << val << "\tHellinger" << val2 << endl;
-
-		windows.feedImages("BGS", bgsub);
-
-
-		assert(erodeFilter || elipseFilter);										//Asserts that one filter is chosen
+		//windows.feedImages("BGS", bgsub);
 
 
-		if (erodeFilter) {
+		assert((erodeFilter_BOOL && !elipseFilter_BOOL) || (!erodeFilter_BOOL && elipseFilter_BOOL));		//Asserts that one filter is chosen and only one
+
+		if (erodeFilter_BOOL) {
 			cv::erode(bgsub, erode, Settings::getErodeElement());
 			cv::dilate(erode, filterResult, Settings::getDilateElement());			//filterResult is the dilatad image
 		}
 
-
-		
-		if (elipseFilter) {
-
-			Mat temp1;
-			Mat temp2;
-			Mat temp3;
-
-			filterResult = Mat::zeros(bgsub.size(), CV_8UC1);
-			temp1 = bgsub.clone();
-
-
-			const int kernelSize = 9;												//Width and height on kernel which will be convolved with the backgroundsubtracted image
-			const int kernelArea = kernelSize * kernelSize;
-			const double accPerc = 0.5;												//(accPerc*100 = Percentage) If the convolution divided by the kernelArea is greater than this value, something will be painted on the resultImage.
-			const double limIntensVal = kernelArea * accPerc;
-			
-			
-			threshold(temp1, temp2, 100, 1, THRESH_BINARY);							//temp_bgsub will contain 0 or 255 values
-			
-			Mat kernel = Mat::ones(kernelSize, kernelSize, CV_8UC1);				//Construct kernel that will be convolved with the image
-			filter2D(temp2, temp3, -1, kernel);										//Conolution on BGS-image and kernel
-			
-
-			const int paintRect_size = 4;
-
-			
-			for (int i = paintRect_size; i < temp3.cols - paintRect_size; i++) {
-				for (int k = paintRect_size; k < temp3.rows - paintRect_size; k++) {
-					Scalar test = temp3.at<uchar>(k, i);
-
-					if (test[0] > limIntensVal) {
-						rectangle(filterResult, Point(i,k), Point(i + paintRect_size, k + paintRect_size), Scalar(255, 255, 255), CV_FILLED, 1, 0);
-					}
-				}
-			}
-			
-
-			//getchar();
+		if (elipseFilter_BOOL) {
+			filterResult = elipseFilter(bgsub);
 		}
 
 		
@@ -242,20 +237,15 @@ int main()
 
 		
 
-		//namedWindow("Window", WINDOW_AUTOSIZE);
-		//namedWindow("BGS", WINDOW_AUTOSIZE);
-		//namedWindow("Contours", CV_WINDOW_AUTOSIZE);
-		
-
 		Mat resultImage = colorImage | out;								//merge the original image and the processed image
 
 		moveWindow("Windows", 0, 0);
 		imshow("Windows", resultImage);									//Show the result image.
 
 
-		
 
-		//View images
+		//View images in a special class
+		//
 		//windows.feedImages("Windows", frame);
 		//windows.feedImages("Dilate Window", dilate);
 		//windows.feedImages("Contours", colorImage);
@@ -278,6 +268,44 @@ int main()
 	}
 	return 0;
 }
+
+Mat elipseFilter(Mat bgsub) {
+	Mat temp1;
+	Mat temp2;
+	Mat temp3;
+
+	filterResult = Mat::zeros(bgsub.size(), CV_8UC1);
+	temp1 = bgsub.clone();
+
+
+	const int kernelSize = 9;												//Width and height on kernel which will be convolved with the backgroundsubtracted image
+	const int kernelArea = kernelSize * kernelSize;
+	const double accPerc = 0.5;												//(accPerc*100 = Percentage) If the convolution divided by the kernelArea is greater than this value, something will be painted on the resultImage.
+	const double limIntensVal = kernelArea * accPerc;
+
+
+	threshold(temp1, temp2, 100, 1, THRESH_BINARY);							//temp_bgsub will contain 0 or 255 values
+
+	Mat kernel = Mat::ones(kernelSize, kernelSize, CV_8UC1);				//Construct kernel that will be convolved with the image
+	filter2D(temp2, temp3, -1, kernel);										//Conolution on BGS-image and kernel
+
+
+	const int paintRect_size = 4;
+
+
+	for (int i = paintRect_size; i < temp3.cols - paintRect_size; i++) {
+		for (int k = paintRect_size; k < temp3.rows - paintRect_size; k++) {
+			Scalar test = temp3.at<uchar>(k, i);
+
+			if (test[0] > limIntensVal) {
+				rectangle(filterResult, Point(i, k), Point(i + paintRect_size, k + paintRect_size), Scalar(255, 255, 255), CV_FILLED, 1, 0);
+			}
+		}
+	}
+
+	return filterResult;
+}
+
 
 /**************************************************************************************************************************************
 /	Paints how many times the trackers have found their blobs in the upper left corner
