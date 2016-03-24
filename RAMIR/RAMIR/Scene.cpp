@@ -19,7 +19,7 @@ ________________________________
 /**************************************************************************************************************************************
 /	ARGUMENTS: entry/exit-line koordinates, region of interest
 **************************************************************************************************************************************/
-Scene::Scene(int arg_sx, int arg_sy, int arg_ex, int arg_ey, Mat arg_ROI) {
+Scene::Scene(int arg_sx, int arg_sy, int arg_ex, int arg_ey, Mat arg_ROI, Rect arg_rect) {
 
 	assert(sx == ex);					//Debug, the line must be vertical
 	pauseForLineCheckDEBUG = true;		//Debug, se declaration
@@ -31,11 +31,17 @@ Scene::Scene(int arg_sx, int arg_sy, int arg_ex, int arg_ey, Mat arg_ROI) {
 	ey = arg_ey;
 
 	ROI = arg_ROI;
+	rect = arg_rect;
 
 
 }
 Scene::Scene() {}
 Scene::~Scene() {
+
+}
+
+Point2f Scene::getStartPos() {
+	return Point2f(rect.x, rect.y);
 
 }
 

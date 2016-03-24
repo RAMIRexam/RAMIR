@@ -18,7 +18,7 @@
 //	(4)	if(t is in ACtracker()	 	deal with the fact that a tracker can be placed in the ACtracker
 //									[CHECK] - blobs belonging to trackers in ACTrackers will be moved from the blobvector to corresponding ACTracker before trackers checks for belonging blobs 
 //
-//	(5)	blob.getCentroid()		 	Make it possible to reach a blobs centroid from the object
+/	(5)	blob.getCentroid()		 	Make it possible to reach a blobs centroid from the object
 //									[CHECK] - getCent() returns the centroid
 //
 //	(6)	delete ACTrackers		 	How shall ACTrackers be deleted?
@@ -37,7 +37,7 @@
 //									[] - 
 //
 //	(11) Elipse/rect as filter	 	Add an alternative to erode-dilate-filter that takes an object and tries to fit it inside the blobs. Will this make the algorithm faster?
-//									[] - 
+//									
 //
 //	(12) getBlobCent(), ROI/image	getBlobCent() returns the position of the blob in the ROI, LSCheck assumes that it returns it in the main image
 //									[] - 

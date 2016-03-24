@@ -22,6 +22,10 @@ Emil Andersson and Niklas Schedin
 using namespace cv;
 using namespace std;
 
+
+
+
+
 Ptr<BackgroundSubtractor> pMOG;
 Mat filterResult;													//Final imageprocessing image, text is painted in this image
 
@@ -31,7 +35,7 @@ int verticalEelinePos;											//vertical entry/exit-line position in the imag
 vector<vector<Point>> myFindContours(Mat src);
 vector<Rect> getAllRects(vector<vector<Point>> contours);
 vector<Blob> createBlobs(Mat image, vector<vector<Point>> contours);
-vector<Tracker*> intersectionTest(vector<Blob> blobs, vector<Tracker*> trackers);
+vector<Tracker*> intersectionTest(vector<Blob>* blobs, vector<Tracker*> trackers);
 vector<Tracker*> tracking(vector<Blob> blobs);
 vector<Tracker*> trackerSurvivalTest(vector<Tracker*> trackers);
 string type2str(int type);
@@ -43,13 +47,13 @@ double startClocking();
 void stopClocking(double t);
 
 void countTrackers();
-void paintTrackerinfo(Mat filterResult);
+void paintTrackerinfo(Mat paintImage);
 
 vector<Tracker*> trackers;										//Contains trackers which hasn't been counted yet.
 vector<Tracker*> ACTrackers;									//Already counted trackers. When a tracker is counted it shall be moved from trackers to this vector
 
 double _imageDivider = 3;
-Scene scene;
+Scene* scene;
 Rect trackingRect;
 
 int rightMovCnt;												//Person moved from left to right detected this many times
@@ -167,7 +171,7 @@ int main()
 	Mat ROI_DefbyUser = out(ROI_Rect);
 	
 	
-	scene = Scene(verticalEelinePos, trackingROI_y, verticalEelinePos, trackingROI_y + trackingROI_height, ROI_DefbyUser);
+	scene = new Scene(verticalEelinePos, trackingROI_y, verticalEelinePos, trackingROI_y + trackingROI_height, ROI_DefbyUser, ROI_Rect);
 	
 	//OLD
 	//scene = Scene(out.cols / 2, 0, out.cols / 2, out.rows, out);					//frame is not used as ROI yet (whithinROI-check not implemented)
@@ -233,7 +237,7 @@ int main()
 
 		trackers = tracking(blobs);										//tracks the blobs
 		countTrackers();												//moves tracker objects from trackers to ACTrackers if they has passed the eeline
-		paintTrackerinfo(out);												//prints info about all detected trackers in the image
+		
 		
 
 		
@@ -247,6 +251,8 @@ int main()
 		Mat dd = out(trackingRect);
 		dd = dd | filterResult2;
 
+
+		paintTrackerinfo(out);												//prints info about all detected trackers in the image
 
 		/*
 		Mat showImage;
@@ -358,7 +364,7 @@ Mat elipseFilter(Mat bgsub) {
 /	Paints how many times the trackers have found their blobs in the upper left corner
 /	Paints right and left counters in upper middle of the image
 **************************************************************************************************************************************/
-void paintTrackerinfo(Mat filterResult) {
+void paintTrackerinfo(Mat paintImage) {
 	
 	int dText = 20;
 	int trackername = 1;
@@ -367,45 +373,78 @@ void paintTrackerinfo(Mat filterResult) {
 	int paintRectDuration = 15;
 
 
+	/*
 	for (Tracker *t : trackers) {
 
 		//Paints how many detections a tracker has made if it exceds or is equal to minDuration. Painted in upper left corner
 		if (t->getDuration() >= minDuration) {
-			putText(filterResult, "Tracker " + to_string(trackername) + ": Number detections " + to_string(t->getDuration()), Point(20, 20 + dText), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 0), 1);
+			putText(paintImage, "Tracker " + to_string(trackername) + ": Number detections " + to_string(t->getDuration()), Point(20, 20 + dText), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 0), 1);
 			dText += 20;
 			trackername++;
 
 			if (t->getDuration() > paintRectDuration) {
-				rectangle(filterResult, t->getLastBlob().getRect().tl(), t->getLastBlob().getRect().br(), Scalar(0, 0, 255), 2, 8, 0);
+				rectangle(paintImage, t->getLastBlob().getRect().tl(), t->getLastBlob().getRect().br(), Scalar(0, 0, 255), 2, 8, 0);
 			}
 		}
 	}
+	*/
+
+
+	//Paint centroid for the trackers
+	for (Tracker *t : trackers) {
+		int startx = scene->getStartPos().x;
+		int starty = scene->getStartPos().y;
+		int ROIx = t->getLastBlob().getCent().x;
+		int ROIy = t->getLastBlob().getCent().y;
+
+		circle(paintImage, Point2f(startx + ROIx, starty + ROIy), 10, Scalar(0, 0, 255), 2, 8, 0);
+	}
+
+	//Paint centroid for the ACTrackers
+	for (Tracker *t : ACTrackers) {
+		int startx = scene->getStartPos().x;
+		int starty = scene->getStartPos().y;
+		int ROIx = t->getLastBlob().getCent().x;
+		int ROIy = t->getLastBlob().getCent().y;
+
+		circle(paintImage, Point2f(startx + ROIx, starty + ROIy), 10, Scalar(0, 255, 0), 2, 8, 0);
+	}
+
+
 
 
 	//Paint ROI defined by user
-	rectangle(filterResult, trackingRect.tl(), trackingRect.br(), Scalar(255, 255, 255), 2, 8, 0);
+	rectangle(paintImage, trackingRect.tl(), trackingRect.br(), Scalar(255, 255, 255), 2, 8, 0);
 
 	//Paint entry/exit-line. the ROI defined by the user sets the upper and lower limits.
-	line(filterResult, Point(verticalEelinePos, trackingRect.y), Point(verticalEelinePos, (trackingRect.y + trackingRect.height)), Scalar(255, 0, 0), 2);
+	line(paintImage, Point(verticalEelinePos, trackingRect.y), Point(verticalEelinePos, (trackingRect.y + trackingRect.height)), Scalar(255, 0, 0), 2);
 
+
+
+
+	//paint black background to write info on
+	Rect r(0, 0, 200, 100);
+	Mat black = Mat::zeros(r.height, r.width, CV_8UC3);
+	Mat paintROI = paintImage(r);
+	paintROI = paintROI & black;
 
 
 	//Paints right and left counters in upper middle of the image
-	putText(filterResult, "Right Counter: " + to_string(rightMovCnt), Point(100, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
-	putText(filterResult, "Left Counter: " + to_string(leftMovCnt), Point(100, 40), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
+	putText(paintImage, "Right Counter: " + to_string(rightMovCnt), Point(20, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
+	putText(paintImage, "Left Counter: " + to_string(leftMovCnt), Point(20, 40), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
 
 	//Paints frames per second, FPS
-	putText(filterResult, "FPS: " + to_string(lastFPS), Point(100, 60), FONT_HERSHEY_DUPLEX, 0.5, Scalar(100, 100, 255), 1);
-	putText(filterResult, "Mean FPS: " + to_string(FPSmean), Point(100, 80), FONT_HERSHEY_DUPLEX, 0.5, Scalar(255, 100, 100), 1);
+	putText(paintImage, "FPS: " + to_string(lastFPS), Point(20, 60), FONT_HERSHEY_DUPLEX, 0.5, Scalar(100, 100, 255), 1);
+	putText(paintImage, "Mean FPS: " + to_string(FPSmean), Point(20, 80), FONT_HERSHEY_DUPLEX, 0.5, Scalar(255, 100, 100), 1);
 
 
 	//Print how many ACTrackers there is
 	if (ACTrackers.size() == 0) {
-		putText(filterResult, "num ACTrackers: 0", Point(800, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(255, 0, 255), 1);
+		putText(paintImage, "num ACTrackers: 0", Point(800, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(255, 0, 255), 1);
 	}
 	else {
 		for (Tracker* t : ACTrackers) {
-			putText(filterResult, "num ACTrackers: " + to_string(ACTrackers.size()), Point(800, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(255, 0, 255), 1);
+			putText(paintImage, "num ACTrackers: " + to_string(ACTrackers.size()), Point(800, 20), FONT_HERSHEY_DUPLEX, 0.5, Scalar(255, 0, 255), 1);
 		}
 	}
 }
@@ -426,7 +465,7 @@ void countTrackers() {
 
 
 	for (Tracker* t : trackers) {														//Update the trackers current side of line
-		t->curSOL = scene.LSCheck(t->getLastBlob());
+		t->curSOL = scene->LSCheck(t->getLastBlob());
 	}
 
 
@@ -474,13 +513,15 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 
 
 	if (ACTrackers.size() > 0) {									//if there exists already counted trackers, the blobs belonging to this trackers must first be removed
-		ACTrackers = intersectionTest(blobs, ACTrackers);			//intersectionTest will move blobs to "already counted trackers"
+		ACTrackers = intersectionTest(&blobs, ACTrackers);			//intersectionTest will move blobs to "already counted trackers"
 	}
 
 
 	if (trackers.size() == 0) {
 		for (Blob b : blobs) {										//No trackers exists. All blobs will turn to a tracker
-			Tracker *t = new Tracker(&scene, b, trackerLife);
+			int lineSide = scene->LSCheck(b);
+			Tracker *t = new Tracker(lineSide, b, trackerLife);
+
 			t->processed = true;
 			trackers.push_back(t);
 
@@ -488,10 +529,12 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 	}
 	
 	else {
-		trackers = intersectionTest(blobs, trackers);				//there already exists trackers, intersectionTest will move blobs to trackers
+		trackers = intersectionTest(&blobs, trackers);				//there already exists trackers, intersectionTest will move blobs to trackers
 
 		for (Blob b : blobs) {										//iterate throught the rest of the blobs and create trackers for them
-			Tracker *t = new Tracker(&scene, b, trackerLife);
+			int lineSide = scene->LSCheck(b);
+			Tracker *t = new Tracker(lineSide, b, trackerLife);
+
 			t->processed = true;
 			trackers.push_back(t);
 
@@ -561,7 +604,7 @@ vector<Tracker*> trackerSurvivalTest(vector<Tracker*> trackers) {
 /	Iterates throught all trackers and checks if their last matched blob intersect with one of them in the scene. If a blob intersects
 /	it will be added to the tracker and removed from the blobvector.
 **************************************************************************************************************************************/
-vector<Tracker*> intersectionTest(vector<Blob> blobs, vector<Tracker*> trackers) {
+vector<Tracker*> intersectionTest(vector<Blob>* blobs, vector<Tracker*> trackers) {
 	/*
 	/	Tests:
 	/		(1) Blob from getLastBlob, shall never return an emptyblob
@@ -573,20 +616,20 @@ vector<Tracker*> intersectionTest(vector<Blob> blobs, vector<Tracker*> trackers)
 	while(i >= 0){																//Check tracker from front (oldest tracker shall be checked first)
 		Tracker* t = trackers[i];
 		
-		vector<Blob> restBlobs;
+		vector<Blob>* restBlobs = new(vector<Blob>);
 		Blob bestBlob;															// constructs an emptyblob (WORKS)
 
 		double minBhatta = DBL_MAX;
 		vector<Mat> isBlobs;													//InterSecting Blobs
 
 		int blobcounter = 0;													//DEBUG
-		int numberBlobs = blobs.size();											//DEBUG
+		int numberBlobs = blobs->size();											//DEBUG
 
-		while (blobs.size() > 0) {
+		while (blobs->size() > 0) {
 			blobcounter++;														//DEBUG
 
-			Blob b = blobs.back();
-			blobs.pop_back();													//Pop makes shure other intersecting blobs than the best is ignored
+			Blob b = blobs->back();
+			blobs->pop_back();													//Pop makes shure other intersecting blobs than the best is ignored
 
 			assert(!t->getLastBlob().emptyBlob);								//(1) DEBUG
 
@@ -603,16 +646,16 @@ vector<Tracker*> intersectionTest(vector<Blob> blobs, vector<Tracker*> trackers)
 					bestBlob = b;
 				}
 			}
-			else { restBlobs.push_back(b); }
+			else { restBlobs->push_back(b); }
 		}
 		assert(blobcounter == numberBlobs);					//if blob is pop'ed, will all blobs still be iterated?
 
-		int testsize = restBlobs.size();					//Debugvariable
+		int testsize = restBlobs->size();					//Debugvariable
 
 		blobs = restBlobs;									//memcpy(&blobs, &restBlobs, sizeof(restBlobs));
 
-		assert(&blobs != &restBlobs);						//DEBUG
-		assert(blobs.size() == testsize);					//DEBUG
+		//assert(blobs != restBlobs);							//DEBUG
+		assert(blobs->size() == testsize);					//DEBUG
 
 															//If intersection
 		if (!bestBlob.emptyBlob) { t->fillWithBlob(bestBlob); }
@@ -730,7 +773,8 @@ vector<vector<Point>> myFindContours(Mat src) {
 	//Check if the area on the contour is big enough
 	vector<vector<Point>> retContours;
 	for (unsigned int i = 0; i < contours.size(); i++){
-		if (moments(contours[i], false).m00 >= Settings::getE())
+		int area = moments(contours[i], false).m00;
+		if (area >= Settings::getE())
 			retContours.push_back(contours[i]);
 	}
 

@@ -10,7 +10,10 @@ _________________________________
 |_______________|________________|
 
 */
-Tracker::Tracker(Scene* scene, Blob blob, int arg_trackerLife) {
+
+
+
+Tracker::Tracker(int lineSide, Blob blob, int arg_trackerLife) {
 	
 	fillWithBlob(blob);
 	duration = 1;
@@ -19,10 +22,10 @@ Tracker::Tracker(Scene* scene, Blob blob, int arg_trackerLife) {
 	trackerLife = fullTrackerLife;
 
 
-	// Start side of entry/exit-line
-	/******************************************/
-	int lineSide = scene->LSCheck(blob);
 
+	
+	// Start side of entry/exit-line
+	/******************************************/				
 	if (lineSide == LEFTSIDE_OFLINE) {
 		staSOL = LEFTSIDE_OFLINE;
 		curSOL = LEFTSIDE_OFLINE;
@@ -33,7 +36,9 @@ Tracker::Tracker(Scene* scene, Blob blob, int arg_trackerLife) {
 		curSOL = RIGHTSIDE_OFLINE;
 	}
 	/******************************************/
+	
 }
+
 
 Tracker::~Tracker() {
 	
@@ -45,6 +50,8 @@ Tracker::~Tracker() {
 	*/
 
 }
+
+
 
 //Returns an int on how many images a tracker has tracked an object
 int Tracker::getDuration() {

@@ -28,15 +28,14 @@ ________________________________
 using namespace cv;
 using namespace std;
 
-class Scene {
+class Scene{
 
 public:
-	Scene(int arg_sx, int arg_sy, int arg_ex, int arg_ey, Mat ROI);
+	Scene(int arg_sx, int arg_sy, int arg_ex, int arg_ey, Mat ROI, Rect arg_rect);
 	Scene();															//Used to enable initialation as global variable in main
 	~Scene();
 	int LSCheck(Blob b);												//Line-side check, checks on which side of the line an object is
-																		//bool WRCheck(Tracker* t);											//Within ROI check, checks if the tracked blob is within the ROI defined by the user
-
+	Point2f getStartPos();
 
 
 
@@ -48,6 +47,7 @@ private:
 	int ey;							//End Y koordinate
 
 	Mat ROI;						//Defines the ROI where objects will be processed
+	Rect rect;						//The rect defining the ROI in the original image
 
 	bool pauseForLineCheckDEBUG;										//DEBUG, breakpoint will stop program and the programmer shall se if the object is on the right side
 };
