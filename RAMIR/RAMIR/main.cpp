@@ -44,6 +44,9 @@ Mat resizeImage(Mat frame, double divider);
 void chooseFilter();
 
 
+int recImageNum;												//increments every times a image is saved to get different names on them
+bool _record;													//Boolean telling if images shall be recorded
+
 double startClocking();
 void stopClocking(double t);
 
@@ -86,6 +89,8 @@ int main()
 
 	MyWindows windows(1500);									//Used to handle image-representation. Argument = screenWidth (Class not used at the moment)
 
+	int recImageNum = 0;										//increments every times a image is saved to get different names on them
+	bool _record = false;										//Boolean telling if images shall be recorded
 
 	rightMovCnt = 0;											//Person moved from left to right detected this many times
 	leftMovCnt = 0;												//Person moved from right to left detected this many times
@@ -218,6 +223,37 @@ int main()
 		imshow("Windows", out);																				//Show the result image.
 
 
+		
+
+		/*
+		while (true) {
+			namedWindow("test");
+			int button = waitKey(0);
+
+			if (!button == -1) {
+				cout << to_string(button) << endl;
+			}
+		}
+		*/
+
+		
+		if (_record) {
+			recImageNum++;
+
+			if (recImageNum % 5 == 0) {
+				imwrite("C:\\Users\\Emil\\Desktop\\PROJEKT\\Examensarbete\\Bilder\\Del 1 Utbildningsfas\\Tracking images\\tracking" + to_string(recImageNum/5) + ".jpg", out);
+			}
+			putText(out, "RECORD", Point(120, out.rows / 2 + 40), FONT_HERSHEY_DUPLEX, 4, Scalar(0, 0, 255), 1);
+			moveWindow("Windows", 0, 0);
+			imshow("Windows", out);
+			
+		}
+
+
+
+
+
+
 
 		switch (waitKey(1))
 		{
@@ -230,6 +266,21 @@ int main()
 
 				return 0;
 				break;
+
+			//P-button. Pause the program
+			case 112:
+				putText(out, "PAUSE" , Point(120, out.rows/2 + 40), FONT_HERSHEY_DUPLEX, 4, Scalar(0, 0, 255), 1);
+				moveWindow("Windows", 0, 0);
+				imshow("Windows", out);
+				
+				while (!waitKey(0) == 112) {} // Press p again will restart the program
+				break;
+
+			//R-button. Start recording. (saves an image to the output 2 times a second)
+			case 114:
+				if (_record ? _record = false : _record = true);
+				break;
+
 		}
 
 		stopClocking(cycleTime);													//Stops the cycle timer. (A part in the process of calculating FPS)
@@ -250,6 +301,7 @@ void chooseFilter() {
 	imshow("windows", infoImage);
 	infoImage.release();
 
+	int debug = waitKey(0);//used for checking buttoncodes
 
 	//Choose filter
 	switch (waitKey(0))

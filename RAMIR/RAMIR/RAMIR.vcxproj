@@ -147,6 +147,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Blob.cpp" />
+    <ClCompile Include="editImages.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MyWindows.cpp" />
     <ClCompile Include="Scene.cpp" />
