@@ -41,6 +41,7 @@ vector<Tracker*> trackerSurvivalTest(vector<Tracker*> trackers);
 string type2str(int type);
 Mat elipseFilter(Mat bgsub);
 Mat resizeImage(Mat frame, double divider);
+void chooseFilter();
 
 
 double startClocking();
@@ -62,10 +63,10 @@ int trackerLife;												//How many images its accaptable for a tracker to no
 int minTrackToBeCounted;										//How many tracks an object has to be tracked before it accepted into the ACTracker
 
 double runTime;													//Variables for counting FPS and cycletime
-int FPS;														//
-int lastFPS;													//
-vector<int> FPShistory;											//
-int FPSmean;													//
+int FPScounter;													//FPScounter counts every cycle until a second has passed.
+int FPS;														//Frames per second the program handles at the moment
+vector<int> FPShistory;											//Used to calculate the mean FPS
+int FPSmean;													//FPS mean value
 
 bool paintRect = true;
 
@@ -76,51 +77,25 @@ bool elipseFilter_BOOL;											//
 int main()
 {	
 	
-	//Print which filters that are available
-	namedWindow("windows");
-	Mat infoImage = Mat::zeros(200, 600, CV_8UC1);
-	putText(infoImage, "Please chose filter: " , Point(20, 40), FONT_HERSHEY_DUPLEX, 1, Scalar(255, 255, 255), 1);
-	putText(infoImage, "E - Erode/Dilate filter: " , Point(20, 80), FONT_HERSHEY_DUPLEX, 1, Scalar(255, 255, 255), 1);
-	putText(infoImage, "R - Rectangle filter: " , Point(20, 120), FONT_HERSHEY_DUPLEX, 1, Scalar(255, 255, 255), 1);
-	moveWindow("windows", 0, 0);
-	imshow("windows", infoImage);
-	infoImage.release();
-
-
-	//Choose filter
-	switch (waitKey(0))
-	{
-		//E-button, Erode/Dilate filter button
-	case 101:
-		erodeFilter_BOOL = true;										//Set Erode/Dilate filter
-		elipseFilter_BOOL = false;										//
-		break;
-
-		//R-button, Elipse filter button
-	case 114:
-		erodeFilter_BOOL = false;										//
-		elipseFilter_BOOL = true;										//Set Elipse filter
-		break;
-	}
-
-
-
+	chooseFilter();												//An image will show up, asking the user to choose a filter that will be applied on the video
 
 	Mat frame, prevBG, bgsub, erode;
 	Rect lastRect;
 
 	Settings::loadSettings();
 
-	MyWindows windows(1500);									//Used to handle image-representation. Argument = screenWidth
+	MyWindows windows(1500);									//Used to handle image-representation. Argument = screenWidth (Class not used at the moment)
 
-	rightMovCnt = 0;
-	leftMovCnt = 0;
-	trackerLife = 4;
-	minTrackToBeCounted = 0;
+
+	rightMovCnt = 0;											//Person moved from left to right detected this many times
+	leftMovCnt = 0;												//Person moved from right to left detected this many times
+	trackerLife = 4;											//How many images its accaptable for a tracker to not find a belonging blob
+	minTrackToBeCounted = 0;									//How many tracks an object has to be tracked before it accepted into the ACTracker
+
 
 	runTime = 0;
+	FPScounter = 0;
 	FPS = 0;
-	lastFPS = 0;
 
 	String video = "C:\\Users\\Emil\\Videos\\humanwalk.mp4";
 	VideoCapture cap(video);
@@ -148,9 +123,8 @@ int main()
 
 
 	/*************************************************************************************************************************************/
-	//	Run ones outside the loop to set the image layout
-	//
-
+	//	Run ones outside the while loop to set the image layout (Dont wanna run this every cycle)
+	/*************************************************************************************************************************************/
 	cap >> frame;
 	Mat out = resizeImage(frame, _imageDivider);
 
@@ -170,48 +144,36 @@ int main()
 	Rect ROI_Rect = Rect(trackingROI_x, trackingROI_y, trackingROI_width, trackingROI_height);
 	Mat ROI_DefbyUser = out(ROI_Rect);
 	
-	
 	scene = new Scene(verticalEelinePos, trackingROI_y, verticalEelinePos, trackingROI_y + trackingROI_height, ROI_DefbyUser, ROI_Rect);
-	
-	//OLD
-	//scene = Scene(out.cols / 2, 0, out.cols / 2, out.rows, out);					//frame is not used as ROI yet (whithinROI-check not implemented)
 	/**************************************************************************************************************************************/
 
 	
 
+
+	/**************************************************************************************************************************************
+	/	This while-loop checks one image from a video at a time. It's here the image processing is done.
+	**************************************************************************************************************************************/
 	while (true)
 	{	
-		double cycleTime = startClocking();														//Starts the clock in order to calculate FPS
+		double cycleTime = startClocking();																	//Starts the clock in order to calculate FPS
 
 		cap >> frame;
 
-		if (frame.empty()){																		//Used when the end of the video is reached
+		if (frame.empty()){																					//Used when the end of the video is reached
 			cap.release();
 			cap.open(video);
-			
 			pMOG = createBackgroundSubtractorMOG2(Settings::getA(), (((double)Settings::getB()) / 10), false);
-			
 			cap >> frame;
 		}
 
 		
-		Mat out = resizeImage(frame, _imageDivider);													//Resizes the raw image.
-		//colorImage = Mat::zeros(out.rows, out.cols, CV_8UC3);
-
-		trackingRect = Rect(trackingROI_x, trackingROI_y, trackingROI_width, trackingROI_height);		//create a rect with the coordinates of the ROIs defined by the user
-		//Mat trackingROI = out.clone();
-		//trackingROI(trackingRect);												//The ROI defined by the user. Outside of this ROI the blobs isn't tracked.
-
-		Mat trackingROI = out(trackingRect);
-
-
-
-		
-
+		Mat out = resizeImage(frame, _imageDivider);														//Resizes the raw image.
+		trackingRect = Rect(trackingROI_x, trackingROI_y, trackingROI_width, trackingROI_height);			//Create a rect with the coordinates of the ROIs defined by the user
+		Mat trackingROI = out(trackingRect);																//The ROI defined by the user. Outside of this ROI the blobs isn't tracked.
 
 
 		prevBG = bgsub;
-		pMOG->apply(trackingROI, bgsub);											//Set which image that shall be processed.
+		pMOG->apply(trackingROI, bgsub);																	//Set which image that shall be processed.
 
 
 		//double val = compareHist(hist1, hist2, CV_COMP_BHATTACHARYYA);
@@ -220,75 +182,42 @@ int main()
 		//windows.feedImages("BGS", bgsub);
 
 
+
+
+		/****************  Filter part  ******************************************************************************************************************************/
 		assert((erodeFilter_BOOL && !elipseFilter_BOOL) || (!erodeFilter_BOOL && elipseFilter_BOOL));		//Asserts that one filter is chosen and only one
 
 		if (erodeFilter_BOOL) {
 			cv::erode(bgsub, erode, Settings::getErodeElement());
-			cv::dilate(erode, filterResult, Settings::getDilateElement());			//filterResult is the dilatad image
+			cv::dilate(erode, filterResult, Settings::getDilateElement());									//filterResult is the dilatad image
 		}
-		if (elipseFilter_BOOL) {
+		if (elipseFilter_BOOL)
 			filterResult = elipseFilter(bgsub);
-		}
-
+		/*************************************************************************************************************************************************************/
 		
-		//cvtColor(filterResult, colorImage, CV_GRAY2BGR, 3);									//convert grayscale image to colorimage
-		vector<vector<Point>> contours = myFindContours(filterResult);						//function uses findContours() to get all contours in the image
+
+
+
+		/****************  Image processing part  ********************************************************************************************************************/
+		vector<vector<Point>> contours = myFindContours(filterResult);			//function uses findContours() to get all contours in the image
 		vector<Blob> blobs = createBlobs(trackingROI, contours);				//create blobs (ROI, RECT, HIST) from all rects
+		trackers = tracking(blobs);												//tracks the blobs
+		countTrackers();														//moves tracker objects from trackers to ACTrackers if they has passed the eeline
+		/*************************************************************************************************************************************************************/
 
-		trackers = tracking(blobs);										//tracks the blobs
-		countTrackers();												//moves tracker objects from trackers to ACTrackers if they has passed the eeline
+
+		Mat filterResult_color;
+		cvtColor(filterResult, filterResult_color, CV_GRAY2BGR, 3);											//convert image in order to make or operation
 		
-		
+		Mat ROI4Merge = out(trackingRect);
+		ROI4Merge = ROI4Merge | filterResult_color;															//This merge the processed trackingRegion with the original image
 
-		
-
-
-		Mat filterResult2;
-		cvtColor(filterResult, filterResult2, CV_GRAY2BGR, 3);
-
-
-
-		Mat dd = out(trackingRect);
-		dd = dd | filterResult2;
-
-
-		paintTrackerinfo(out);												//prints info about all detected trackers in the image
-
-		/*
-		Mat showImage;
-		int extraBlackWidth = notTrackedWidth / 2;						//notTrackedWidth is the spaces on the left and on the right of the tracked area added together
-		Mat extraBlack = Mat::zeros(trackingROI_height, extraBlackWidth, CV_8UC1);
-		vector<Mat> mergeMats;
-		mergeMats.push_back(extraBlack);
-		mergeMats.push_back(filterResult);
-		mergeMats.push_back(extraBlack);
-		
-		hconcat(mergeMats, showImage);
-
-		//extraBlack = Mat::zeros(trackingROI_height, extraBlackWidth, CV_8UC1);
-
-		Mat test = showImage(Rect(100, 100, 100, 100));
-		//showImage = showImage | out;
-		*/
-
-
+		paintTrackerinfo(out);																				//prints info about all detected trackers in the image
 
 		moveWindow("Windows", 0, 0);
-		imshow("Windows", out);									//Show the result image.
+		imshow("Windows", out);																				//Show the result image.
 
 
-
-
-
-
-
-
-		//View images in a special class
-		//
-		//windows.feedImages("Windows", frame);
-		//windows.feedImages("Dilate Window", dilate);
-		//windows.feedImages("Contours", colorImage);
-		//windows.showImages();
 
 		switch (waitKey(1))
 		{
@@ -307,6 +236,38 @@ int main()
 	}
 	return 0;
 }
+/**************************************************************************************************************************************
+/	An image will show up, asking the user to choose a filter that will be applied on the video
+**************************************************************************************************************************************/
+void chooseFilter() {
+	//Print which filters that are available
+	namedWindow("windows");
+	Mat infoImage = Mat::zeros(200, 600, CV_8UC1);
+	putText(infoImage, "Please chose filter: ", Point(20, 40), FONT_HERSHEY_DUPLEX, 1, Scalar(255, 255, 255), 1);
+	putText(infoImage, "E - Erode/Dilate filter: ", Point(20, 80), FONT_HERSHEY_DUPLEX, 1, Scalar(255, 255, 255), 1);
+	putText(infoImage, "R - Rectangle filter: ", Point(20, 120), FONT_HERSHEY_DUPLEX, 1, Scalar(255, 255, 255), 1);
+	moveWindow("windows", 0, 0);
+	imshow("windows", infoImage);
+	infoImage.release();
+
+
+	//Choose filter
+	switch (waitKey(0))
+	{
+		//E-button, Erode/Dilate filter button
+	case 101:
+		erodeFilter_BOOL = true;										//Set Erode/Dilate filter
+		elipseFilter_BOOL = false;										//
+		break;
+
+		//R-button, Elipse filter button
+	case 114:
+		erodeFilter_BOOL = false;										//
+		elipseFilter_BOOL = true;										//Set Elipse filter
+		break;
+	}
+}
+
 
 /**************************************************************************************************************************************
 /	Resizes an image. Greater value on argument "divider" gives a smaller image
@@ -322,6 +283,10 @@ Mat resizeImage(Mat frame, double divider) {
 	return out;
 }
 
+/**************************************************************************************************************************************
+/	An image processing filter that takes an rectangle and tries to fit it into the BGS image. If the rect fits with over 50% this will
+/	be added to the filterResult matrix
+**************************************************************************************************************************************/
 Mat elipseFilter(Mat bgsub) {
 	Mat temp1;
 	Mat temp2;
@@ -434,7 +399,7 @@ void paintTrackerinfo(Mat paintImage) {
 	putText(paintImage, "Left Counter: " + to_string(leftMovCnt), Point(20, 40), FONT_HERSHEY_DUPLEX, 0.5, Scalar(0, 255, 255), 1);
 
 	//Paints frames per second, FPS
-	putText(paintImage, "FPS: " + to_string(lastFPS), Point(20, 60), FONT_HERSHEY_DUPLEX, 0.5, Scalar(100, 100, 255), 1);
+	putText(paintImage, "FPS: " + to_string(FPS), Point(20, 60), FONT_HERSHEY_DUPLEX, 0.5, Scalar(100, 100, 255), 1);
 	putText(paintImage, "Mean FPS: " + to_string(FPSmean), Point(20, 80), FONT_HERSHEY_DUPLEX, 0.5, Scalar(255, 100, 100), 1);
 
 
@@ -588,8 +553,6 @@ vector<Tracker*> trackerSurvivalTest(vector<Tracker*> trackers) {
 		else {
 			delete t;
 		}
-
-
 	}
 
 	trackers = tempTrackers;
@@ -637,7 +600,6 @@ vector<Tracker*> intersectionTest(vector<Blob>* blobs, vector<Tracker*> trackers
 				Mat hist1 = b.getHist();
 				Mat hist2 = t->getLastBlob().getHist();
 
-
 				double bhatta = compareHist(b.getHist(), t->getLastBlob().getHist(), CV_COMP_BHATTACHARYYA);
 
 				if (bhatta < minBhatta) {
@@ -648,17 +610,11 @@ vector<Tracker*> intersectionTest(vector<Blob>* blobs, vector<Tracker*> trackers
 			}
 			else { restBlobs->push_back(b); }
 		}
-		assert(blobcounter == numberBlobs);					//if blob is pop'ed, will all blobs still be iterated?
+		assert(blobcounter == numberBlobs);										//if blob is pop'ed, will all blobs still be iterated?
 
-		int testsize = restBlobs->size();					//Debugvariable
-
-		blobs = restBlobs;									//memcpy(&blobs, &restBlobs, sizeof(restBlobs));
-
-		//assert(blobs != restBlobs);							//DEBUG
-		assert(blobs->size() == testsize);					//DEBUG
-
-															//If intersection
-		if (!bestBlob.emptyBlob) { t->fillWithBlob(bestBlob); }
+		blobs = restBlobs;									
+																	
+		if (!bestBlob.emptyBlob) { t->fillWithBlob(bestBlob); }					//If intersection
 		else { t->fillWithEmptyBlob(); }
 
 		t->processed = true;
@@ -810,8 +766,8 @@ string type2str(int type) {
 **************************************************************************************************************************************/
 double startClocking() {
 	if (runTime > 1) {												//If one second has past
-		lastFPS = FPS;
-		FPShistory.push_back(FPS);
+		FPS = FPScounter;
+		FPShistory.push_back(FPScounter);
 
 		for (int fps : FPShistory)
 			FPSmean += fps;
@@ -819,10 +775,10 @@ double startClocking() {
 		FPSmean /= FPShistory.size();
 
 
-		FPS = 0;
+		FPScounter = 0;
 		runTime = 0;
 	}
-	else { FPS++; }
+	else { FPScounter++; }
 	return (double)getTickCount();								//Start timer clock. Used to calculate FPS
 }
 /**************************************************************************************************************************************
