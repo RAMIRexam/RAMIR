@@ -167,6 +167,7 @@
   <ItemGroup>
     <ClInclude Include="Blob.hpp" />
     <ClInclude Include="Definitions.hpp" />
+    <ClInclude Include="editImages.hpp" />
     <ClInclude Include="MyWindows.hpp" />
     <ClInclude Include="Scene.hpp" />
     <ClInclude Include="Settings.hpp" />

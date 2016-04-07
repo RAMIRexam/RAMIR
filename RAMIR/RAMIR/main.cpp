@@ -12,6 +12,7 @@ Emil Andersson and Niklas Schedin
 #include "Settings.hpp"
 #include "Tracker.hpp"
 #include "MyWindows.hpp"
+#include "editImages.hpp"										//Class used for creating images to the report
 
 #include <opencv2\core.hpp>
 #include <opencv2\opencv.hpp>
@@ -72,14 +73,22 @@ vector<int> FPShistory;											//Used to calculate the mean FPS
 int FPSmean;													//FPS mean value
 
 bool paintRect = true;
+bool _REZISE = false;											//If the image shall be resized
+
 
 bool erodeFilter_BOOL;											//Defines which filter shall be used
 bool elipseFilter_BOOL;											//
 
 
+
+
 int main()
 {	
 	
+	//while (true) {
+	//	editImages::morphological();
+	//}
+
 	chooseFilter();												//An image will show up, asking the user to choose a filter that will be applied on the video
 
 	Mat frame, prevBG, bgsub, erode;
@@ -102,7 +111,7 @@ int main()
 	FPScounter = 0;
 	FPS = 0;
 
-	String video = "C:\\Users\\Emil\\Videos\\humanwalk.mp4";
+	String video = "C:\\Users\\Emil\\Videos\\humanwalk1.avi";
 	VideoCapture cap(video);
 
 	if (!cap.isOpened())
@@ -131,7 +140,17 @@ int main()
 	//	Run ones outside the while loop to set the image layout (Dont wanna run this every cycle)
 	/*************************************************************************************************************************************/
 	cap >> frame;
-	Mat out = resizeImage(frame, _imageDivider);
+
+	Mat out;
+
+
+	//If the image shall be resized
+	if (_REZISE)
+		out = resizeImage(frame, _imageDivider);
+	else
+		out = frame;
+	
+	
 
 	int widthDivider = 3;															//sets the ROI's width (ROI defined by the user)
 	int heightDivider = 10;															//sets the ROI's height (ROI defined by the user)
@@ -171,10 +190,21 @@ int main()
 			cap >> frame;
 		}
 
-		
-		Mat out = resizeImage(frame, _imageDivider);														//Resizes the raw image.
+
+
+		//If the image shall be resized
+		if (_REZISE)
+			out = resizeImage(frame, _imageDivider);
+		else
+			out = frame;
+
+
+
+
 		trackingRect = Rect(trackingROI_x, trackingROI_y, trackingROI_width, trackingROI_height);			//Create a rect with the coordinates of the ROIs defined by the user
 		Mat trackingROI = out(trackingRect);																//The ROI defined by the user. Outside of this ROI the blobs isn't tracked.
+
+
 
 
 		prevBG = bgsub;
@@ -186,7 +216,7 @@ int main()
 		//cout << "Bhattacharyya: " << val << "\tHellinger" << val2 << endl;
 		//windows.feedImages("BGS", bgsub);
 
-
+		
 
 
 		/****************  Filter part  ******************************************************************************************************************************/
@@ -199,7 +229,6 @@ int main()
 		if (elipseFilter_BOOL)
 			filterResult = elipseFilter(bgsub);
 		/*************************************************************************************************************************************************************/
-		
 
 
 
@@ -298,26 +327,51 @@ void chooseFilter() {
 	putText(infoImage, "E - Erode/Dilate filter: ", Point(20, 80), FONT_HERSHEY_DUPLEX, 1, Scalar(255, 255, 255), 1);
 	putText(infoImage, "R - Rectangle filter: ", Point(20, 120), FONT_HERSHEY_DUPLEX, 1, Scalar(255, 255, 255), 1);
 	moveWindow("windows", 0, 0);
+	imshow("windows", infoImage); 
+
+	//int debug = waitKey(0);//used for checking buttoncodes
+	String key;
+	bool validKey = false;
+
+	while (!validKey) {
+		//Choose filter
+		switch (waitKey(0))
+		{
+			//E-button, Erode/Dilate filter button
+		case 101:
+			erodeFilter_BOOL = true;										//Set Erode/Dilate filter
+			elipseFilter_BOOL = false;										//
+			key = "e";
+			validKey = true;
+			break;
+
+			//R-button, Elipse filter button
+		case 114:
+			erodeFilter_BOOL = false;										//
+			elipseFilter_BOOL = true;										//Set Elipse filter
+			key = "r";
+			validKey = true;
+			break;
+
+		default:
+			putText(infoImage, "Not Valid Key!", Point(20, 140), FONT_HERSHEY_DUPLEX, 1, Scalar(255, 255, 255), 1);
+			moveWindow("windows", 0, 0);
+			imshow("windows", infoImage);
+		}
+			
+	}
+
+	
+
+
+	putText(infoImage, key, Point(20, 140), FONT_HERSHEY_DUPLEX, 1, Scalar(255, 255, 255), 1);
+	
+	moveWindow("windows", 0, 0);
 	imshow("windows", infoImage);
 	infoImage.release();
 
-	int debug = waitKey(0);//used for checking buttoncodes
+	waitKey(500);
 
-	//Choose filter
-	switch (waitKey(0))
-	{
-		//E-button, Erode/Dilate filter button
-	case 101:
-		erodeFilter_BOOL = true;										//Set Erode/Dilate filter
-		elipseFilter_BOOL = false;										//
-		break;
-
-		//R-button, Elipse filter button
-	case 114:
-		erodeFilter_BOOL = false;										//
-		elipseFilter_BOOL = true;										//Set Elipse filter
-		break;
-	}
 }
 
 
