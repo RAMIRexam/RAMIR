@@ -22,11 +22,6 @@ std::ifstream Settings::ifile;
 
 
 
-
-
-
-
-
 //-------------INIT WINDOW FOR TRACKBARS--------------------
 void Settings::init(cv::Ptr<cv::BackgroundSubtractor> *pMOG)
 {

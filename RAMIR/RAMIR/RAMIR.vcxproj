@@ -58,7 +58,7 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="OpenCv.props" />
+    <Import Project="..\..\..\..\..\Desktop\PROJEKT\Examensarbete\Visual studio\OpenCv.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -146,18 +146,36 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Blob.cpp" />
+    <ClCompile Include="editImages.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MyWindows.cpp" />
+    <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Settings.cpp" />
+    <ClCompile Include="Test.cpp" />
+    <ClCompile Include="Tracker.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Information.txt" />
+    <Text Include="pseudocode_counting.txt" />
+    <Text Include="pseudocode_tracking.txt" />
     <Text Include="Settings.txt" />
   </ItemGroup>
   <ItemGroup>
     <Media Include="videoplayback1.mp4" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Blob.hpp" />
+    <ClInclude Include="Definitions.hpp" />
+    <ClInclude Include="editImages.hpp" />
+    <ClInclude Include="MyWindows.hpp" />
+    <ClInclude Include="Scene.hpp" />
     <ClInclude Include="Settings.hpp" />
+    <ClInclude Include="Test.hpp" />
+    <ClInclude Include="Tracker.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

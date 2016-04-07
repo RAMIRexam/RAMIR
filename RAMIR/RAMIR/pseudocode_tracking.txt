@@ -1,0 +1,129 @@
+//--------------------PSEUDOKOD TRACKING----------------
+
+while (true)
+{
+	//CAPTURE IMAGE
+	//BGSUB
+	//DILATE
+	//GET ALL CONTOURS FROM DILATE
+	//CREATE BLOBS
+
+	
+	//If there exists already counted trackers
+	if(ACTrackers.size() > 0){
+		//CHECK INTERSECTION AS BELOW
+		//REMOVE BLOBS FROM BLOBVECTOR
+		//
+	
+	}
+
+	
+	
+	if (trackers == 0) { - kan inte jämföra med några trackers...
+		//create trackers for all blobs
+		//remove blobs from bloblist
+		//candidate trackers >> trackers
+	}
+		
+	else { 
+
+		for (Tracker t : trackers) {
+			//init intersecting rect variables
+			for (Blob b : allBlobs) {
+				
+				/*
+				(1)  -match with tracker?
+				*/
+				if (blob intersect with tracker) {
+					//calculate and update the one with least bhattacharryan coeff
+					//throw other intersecting rects (pop)
+				}
+				else{
+					//push blob into tempblobs for iteration futher though
+				}
+			}
+
+			/*
+				If a rect match the tracker
+			*/
+			if (a blob intersect with the tracker) {
+				//fill the tracker with the new blob
+				//remove blob from bloblist (already done)
+				//tracker.processed = true
+			}
+			//the tracker has no intersecting blobs
+			else {
+				//t.fillWithEmptyBlob();
+				//tracker.processed = true
+			}
+			
+		}
+
+		//iterate throught the rest of the blobs and create trackers for them
+		for (Blob b : blobs) {
+			//create new tracker
+			//tracker = processed
+		}
+
+
+		for (Tracker t : trackers) {
+			if (tracker != processed) {
+				//t.fillWithEmptyBlob();
+				//tracker.processed = true;
+			}
+		}
+	}
+	
+
+
+
+	Test::trackerTest(trackers); //assertiontest for trackers
+
+	//check if trackers shall survive
+	for (Tracker t : trackers) {
+		if (t.survivaltest()) {
+			t.~tracker();
+		}
+	}
+
+	//reset processed for next iteration
+	for (Trackers t : trackers) {
+		t.processed = false;
+	}
+}
+
+
+/*
+if more than one rect intersect with a trackerobject, only one shall be used, the others shall be tossed.
+It two trackers gets close to eachother, there will be problem...
+
+
+
+
+Hur itererar man genom en vektor på ett bra sätt?
+Hur kallar man en funktion inom objektet? print...
+Hur funkar dekonstroktorn?
+
+
+
+
+Tracker *t = new Tracker(b);
+
+	cout << &t << endl; - returnerar inte samma saker!
+	cout << t << endl;
+*/
+
+
+/*******************************************************************
+	/Testcode for calculating histograms
+	/
+	//Niklas
+	//calcHist(&bgsub, 1, channels, Mat(), hist1, 2, histSize, ranges);
+	//calcHist(&prevBG, 1, channels, Mat(), hist2, 2, histSize, ranges);
+	//calcHist(&bgsub, 1, 0, Mat(), hist1, 1, histSize, ranges);
+	//calcHist(&prevBG, 1, 0, Mat(), hist2, 1, histSize, ranges);
+	/
+	//Emil
+	//calcHist(&test 1, channels, Mat(), tempHist, 2, histSize, ranges);
+	/
+	********************************************************************/

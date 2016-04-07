@@ -1,0 +1,92 @@
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//This Pseudocode demonstrates how a blob will be counted.
+//
+//when a blob first is detected it is added to a new tracker.
+//
+//
+//MISSION
+//	(1) LSCheck(Tracker)			add a function that decides which side of the entry/exit-line (eeline) the blob is on
+//									[CHECK] - The function returns LEFTSIDE_OFLINE or RIGHTSIDE_OFLINE 
+//
+//	(2) int staSOL					add to tracker which side of the eeline the blob was first detected (startside of line)
+//									[CHECK] - staSOL and curSOL.
+//
+//	(3) countPersonCheck()			checks if the blob has moved over the eeline
+//									[CHECK] - not a method, just compare staSOL and curSOL
+//
+//	(4)	if(t is in ACtracker()	 	deal with the fact that a tracker can be placed in the ACtracker
+//									[CHECK] - blobs belonging to trackers in ACTrackers will be moved from the blobvector to corresponding ACTracker before trackers checks for belonging blobs 
+//
+/	(5)	blob.getCentroid()		 	Make it possible to reach a blobs centroid from the object
+//									[CHECK] - getCent() returns the centroid
+//
+//	(6)	delete ACTrackers		 	How shall ACTrackers be deleted?
+//									[CHECK] - survivaltest() 
+//
+//	(7)	empltyblob last			 	What will happen if an emptyblob is last in the tracker when it will check intersection with a new blob??
+//									[CHECK] - it will no longer return an emptyblob 
+//
+//	(8)	minTrackToBeCounted		 	Handle if a object has changed from start side of line to the other one, but not reached enough tracks.
+//									[CHECK] - controlled with the global variable minTrackToBeCounted
+//
+//	(9)	manyBlobs on one place	 	Can there be many blobs/trackers on same place. Had 4 trackers on one blob in debugging
+//									[CHECK] - must insert in trackervector from one side and get from one
+//
+//	(10) HSV					 	Test backgroundsubtraction in HSV
+//									[] - 
+//
+//	(11) Elipse/rect as filter	 	Add an alternative to erode-dilate-filter that takes an object and tries to fit it inside the blobs. Will this make the algorithm faster?
+//									[] - 
+//
+//	(12) getBlobCent(), ROI/image	getBlobCent() returns the position of the blob in the ROI, LSCheck assumes that it returns it in the main image
+//									[CHECK] - the comparation is now only in the trackerRegion 24-03-2016
+//
+//	(13) always slow program		Regarding the elipse filter. Why is the program slow even when there is no blobs to process?
+//									[] - 
+//
+//	(NUMBER) SHORTDESCRIPTION		LONGERDESCRIPTION
+//									[] - 
+//
+//	(NUMBER) SHORTDESCRIPTION		LONGERDESCRIPTION
+//									[] - 
+//
+//	(NUMBER) SHORTDESCRIPTION		LONGERDESCRIPTION
+//									[] - 
+//
+//	(NUMBER) SHORTDESCRIPTION		LONGERDESCRIPTION
+//									[] - 
+//
+//	(NUMBER) SHORTDESCRIPTION		LONGERDESCRIPTION
+//									[] - 
+//
+//	(NUMBER) SHORTDESCRIPTION		LONGERDESCRIPTION
+//									[] - 
+//
+//
+//
+//Emil A
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+vector<Tracker> ACtrackers;					//Already Counted Trackers
+
+trackers = tracking(blobs);					//(2)
+countBlobsCheck();							//Has one or more blobs that are tracked passed the eeline and shall be counted?
+
+
+/*
+Has one or more blobs that are tracked passed the eeline and shall be counted?
+*/
+void countBlobsCheck(vector<Tracker> trackers){
+	for (Tracker t : trackers) {
+	if(t.countPersonCheck()){
+		//move tracker to ACtrackers
+	}
+}
+
+
+paintTrackerinfo(trackers);									//prints info about all detected trackers in the image
+		
+		
