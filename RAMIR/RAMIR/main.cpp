@@ -73,7 +73,7 @@ vector<int> FPShistory;											//Used to calculate the mean FPS
 int FPSmean;													//FPS mean value
 
 bool paintRect = true;
-bool _REZISE = false;											//If the image shall be resized
+bool _REZISE = true;											//If the image shall be resized
 
 
 bool erodeFilter_BOOL;											//Defines which filter shall be used
@@ -111,7 +111,7 @@ int main()
 	FPScounter = 0;
 	FPS = 0;
 
-	String video = "C:\\Users\\Emil\\Videos\\humanwalk1.avi";
+	String video = "C:\\Users\\Emil\\Videos\\r_huset.mp4";
 	VideoCapture cap(video);
 
 	if (!cap.isOpened())

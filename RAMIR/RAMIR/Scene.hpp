@@ -41,15 +41,15 @@ public:
 
 private:
 	//Entry/Exit-line in ROI
-	int sx;							//Start X koordinate
-	int sy;							//Start Y koordinate
-	int ex;							//End X koordinate
-	int ey;							//End Y koordinate
+	int sx;									//Start X koordinate
+	int sy;									//Start Y koordinate
+	int ex;									//End X koordinate
+	int ey;									//End Y koordinate
 
-	Mat ROI;						//Defines the ROI where objects will be processed
-	Rect rect;						//The rect defining the ROI in the original image
+	Mat ROI;								//Defines the ROI where objects will be processed
+	Rect rect;								//The rect defining the ROI in the original image
 
-	bool pauseForLineCheckDEBUG;										//DEBUG, breakpoint will stop program and the programmer shall se if the object is on the right side
+	bool pauseForLineCheckDEBUG;			//DEBUG, breakpoint will stop program and the programmer shall se if the object is on the right side
 };
 
 #endif
