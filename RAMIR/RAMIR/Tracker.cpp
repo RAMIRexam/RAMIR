@@ -13,7 +13,7 @@ _________________________________
 
 
 
-Tracker::Tracker(int lineSide, Blob blob, int arg_trackerLife) {
+Tracker::Tracker(int lineSide, Blob* blob, int arg_trackerLife) {
 	
 	fillWithBlob(blob);
 	duration = 1;
@@ -42,12 +42,11 @@ Tracker::Tracker(int lineSide, Blob blob, int arg_trackerLife) {
 
 Tracker::~Tracker() {
 	
-	/*
-	for (Blob b : blobvector) {
-		blobvector
-		delete &b;
+	
+	for (Blob* b : blobvector) {
+		delete b;
 	}
-	*/
+	
 
 }
 
@@ -58,7 +57,7 @@ int Tracker::getDuration() {
 	return duration;
 }
 
-Blob Tracker::getLastBlob() {
+Blob* Tracker::getLastBlob() {
 	assert(blobvector.size() > 0);
 	return lastBlob;
 }
@@ -69,7 +68,8 @@ void Tracker::setTrackerLife(int life) {
 }
 
 
-void Tracker::fillWithBlob(Blob b) {
+void Tracker::fillWithBlob(Blob* b) {
+	assert(!b->emptyBlob);
 	blobvector.push_back(b);
 	lastBlob = b;
 	duration++;
@@ -79,8 +79,8 @@ void Tracker::fillWithBlob(Blob b) {
 Fills the tracker with an empty blob (if no match was found)
 */
 void Tracker::fillWithEmptyBlob() {
-	Blob *b = new Blob();
-	blobvector.push_back(*b);
+	Blob* b = new Blob();
+	blobvector.push_back(b);
 	duration++;
 }
 
@@ -92,7 +92,7 @@ If survivalTest returns false the tracker shall be destroyed
 bool Tracker::survivalTest() {
 	assert(blobvector.size() != 0);
 
-	if (blobvector.back().emptyBlob == true) { // if no blob could me matched with the tracker last iteration
+	if (blobvector.back()->emptyBlob == true) { // if no blob could me matched with the tracker last iteration
 		trackerLife--;
 		
 		if (trackerLife == 0) { 

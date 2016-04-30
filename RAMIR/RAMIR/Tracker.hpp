@@ -25,14 +25,14 @@ using namespace std;
 class Tracker{
 	
 public:
-	Tracker(int lineSide, Blob blob, int arg_trackerLife);
+	Tracker(int lineSide, Blob* blob, int arg_trackerLife);
 	~Tracker();
 
 	int getDuration();
-	Blob getLastBlob();
+	Blob* getLastBlob();
 	bool survivalTest();
 	void setTrackerLife(int life);
-	void fillWithBlob(Blob b);
+	void fillWithBlob(Blob* b);
 	void fillWithEmptyBlob();
 
 
@@ -44,8 +44,8 @@ public:
 
 
 private:
-	vector<Blob> blobvector;		//contains all detected blobs in order
-	Blob lastBlob;					//getLastBlob() returns this variable. lastBlob shall never be an emptyblob.
+	vector<Blob*> blobvector;		//contains all detected blobs in order
+	Blob* lastBlob;					//getLastBlob() returns this variable. lastBlob shall never be an emptyblob.
 	int duration;					//How many blobs the blobvector contains
 	int fullTrackerLife;			//How much life a tracker has when constructed and when a blob (not emptyblob) is added to the blobvector
 	int trackerLife;				//A trackers actual life. Will be reverse-counted when a emptyblob is added to the blobvector

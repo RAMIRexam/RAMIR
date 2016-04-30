@@ -34,7 +34,7 @@ public:
 	Scene(int arg_sx, int arg_sy, int arg_ex, int arg_ey, Mat ROI, Rect arg_rect);
 	Scene();															//Used to enable initialation as global variable in main
 	~Scene();
-	int LSCheck(Blob b);												//Line-side check, checks on which side of the line an object is
+	int LSCheck(Blob* b);												//Line-side check, checks on which side of the line an object is
 	Point2f getStartPos();
 
 

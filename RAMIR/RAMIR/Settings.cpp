@@ -29,7 +29,7 @@ void Settings::init(cv::Ptr<cv::BackgroundSubtractor> *pMOG)
 
 	cv::resizeWindow("Settings", 560, 400);
 
-	cv::createTrackbar("BgHistory", "Settings", &slider1, 1000, setHist, pMOG);
+	cv::createTrackbar("BgHistory", "Settings", &slider1, 2000, setHist, pMOG);
 	cv::createTrackbar("BgThreshold", "Settings", &slider2, 400, setBgThres, pMOG);
 	cv::createTrackbar("ErodeElem", "Settings", &slider3, 60, setErodeElement, pMOG);
 	cv::createTrackbar("DilateElem", "Settings", &slider4, 60, setDilateElement, pMOG);
@@ -58,7 +58,7 @@ void Settings::setHist(int value, void * a)
 	A = value + 1;
 	cv::Ptr<cv::BackgroundSubtractor> *pMOG = (cv::Ptr<cv::BackgroundSubtractor> *)a;
 	pMOG->release();
-	*pMOG = cv::createBackgroundSubtractorMOG2(A, (((double)B) / 10), false);
+	*pMOG = cv::createBackgroundSubtractorMOG2(A, ((double)B), false);
 }
 
 void Settings::setBgThres(int value, void * a)
@@ -66,7 +66,7 @@ void Settings::setBgThres(int value, void * a)
 	B = value + 1;
 	cv::Ptr<cv::BackgroundSubtractor> *pMOG = (cv::Ptr<cv::BackgroundSubtractor> *)a;
 	pMOG->release();
-	*pMOG = cv::createBackgroundSubtractorMOG2(A, (((double)B) / 10), false);
+	*pMOG = cv::createBackgroundSubtractorMOG2(A, ((double)B), false);
 }
 
 void Settings::setErodeElement(int value, void * a)

@@ -152,7 +152,9 @@
     <ClCompile Include="MyWindows.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Settings.cpp" />
+    <ClCompile Include="Statistic.cpp" />
     <ClCompile Include="Test.cpp" />
+    <ClCompile Include="Tools.cpp" />
     <ClCompile Include="Tracker.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -171,7 +173,9 @@
     <ClInclude Include="MyWindows.hpp" />
     <ClInclude Include="Scene.hpp" />
     <ClInclude Include="Settings.hpp" />
+    <ClInclude Include="Statistic.hpp" />
     <ClInclude Include="Test.hpp" />
+    <ClInclude Include="Tools.hpp" />
     <ClInclude Include="Tracker.hpp" />
   </ItemGroup>
   <ItemGroup>

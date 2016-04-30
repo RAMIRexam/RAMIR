@@ -13,6 +13,7 @@ Emil Andersson and Niklas Schedin
 #include "Tracker.hpp"
 #include "MyWindows.hpp"
 #include "editImages.hpp"										//Class used for creating images to the report
+#include "Statistic.hpp"
 
 #include <opencv2\core.hpp>
 #include <opencv2\opencv.hpp>
@@ -35,9 +36,9 @@ int verticalEelinePos;											//vertical entry/exit-line position in the imag
 
 vector<vector<Point>> myFindContours(Mat src);
 vector<Rect> getAllRects(vector<vector<Point>> contours);
-vector<Blob> createBlobs(Mat image, vector<vector<Point>> contours);
-vector<Tracker*> intersectionTest(vector<Blob>* blobs, vector<Tracker*> trackers);
-vector<Tracker*> tracking(vector<Blob> blobs);
+void createBlobs(vector<Blob*>* blobs, Mat image, vector<vector<Point>> contours);
+vector<Tracker*> intersectionTest(vector<Blob*>* blobs, vector<Tracker*> trackers);
+vector<Tracker*> tracking(vector<Blob*>* blobs);
 vector<Tracker*> trackerSurvivalTest(vector<Tracker*> trackers);
 string type2str(int type);
 Mat elipseFilter(Mat bgsub);
@@ -47,6 +48,7 @@ void chooseFilter();
 
 int recImageNum;												//increments every times a image is saved to get different names on them
 bool _record;													//Boolean telling if images shall be recorded
+
 
 double startClocking();
 void stopClocking(double t);
@@ -73,8 +75,8 @@ vector<int> FPShistory;											//Used to calculate the mean FPS
 int FPSmean;													//FPS mean value
 
 bool paintRect = true;
-bool _REZISE = true;											//If the image shall be resized
-
+bool _REZISE = false;											//If the image shall be resized
+bool _TRANSPOSE = true;											//Boolean telling if the images shall be transposed (depending on walking direction)
 
 bool erodeFilter_BOOL;											//Defines which filter shall be used
 bool elipseFilter_BOOL;											//
@@ -89,9 +91,18 @@ int main()
 	//	editImages::morphological();
 	//}
 
-	chooseFilter();												//An image will show up, asking the user to choose a filter that will be applied on the video
 
-	Mat frame, prevBG, bgsub, erode;
+	Statistic stat("statistics");
+
+
+	//To make choosewindow appearing, uncomment choosefilter and comment erodeFilter and elipseFilter
+	//chooseFilter();												//An image will show up, asking the user to choose a filter that will be applied on the video
+	erodeFilter_BOOL = true;										//Set Erode/Dilate filter
+	elipseFilter_BOOL = false;
+
+
+
+	Mat frame, frameTransposed, prevBG, bgsub, erode;
 	Rect lastRect;
 
 	Settings::loadSettings();
@@ -100,6 +111,7 @@ int main()
 
 	int recImageNum = 0;										//increments every times a image is saved to get different names on them
 	bool _record = false;										//Boolean telling if images shall be recorded
+
 
 	rightMovCnt = 0;											//Person moved from left to right detected this many times
 	leftMovCnt = 0;												//Person moved from right to left detected this many times
@@ -111,14 +123,14 @@ int main()
 	FPScounter = 0;
 	FPS = 0;
 
-	String video = "C:\\Users\\Emil\\Videos\\r_huset.mp4";
+	String video = "C:\\Users\\Emil\\Videos\\humanwalk5.avi";
 	VideoCapture cap(video);
 
 	if (!cap.isOpened())
 		return -1;
 
 
-	pMOG = createBackgroundSubtractorMOG2(Settings::getA(), (((double)Settings::getB()) / 10), false);
+	pMOG = createBackgroundSubtractorMOG2(Settings::getA(), (((double)Settings::getB())), false);
 
 
 	//--------------TESTING--------------------------------
@@ -143,27 +155,46 @@ int main()
 
 	Mat out;
 
+	
+	
+	if (_TRANSPOSE) {
+		transpose(frame, frameTransposed);
+		frame = frameTransposed;
+	}
 
 	//If the image shall be resized
 	if (_REZISE)
 		out = resizeImage(frame, _imageDivider);
 	else
 		out = frame;
-	
-	
 
-	int widthDivider = 3;															//sets the ROI's width (ROI defined by the user)
-	int heightDivider = 10;															//sets the ROI's height (ROI defined by the user)
 
-	int trackingROI_x = out.cols / widthDivider;									//Define the coordinates for the ROI defined by the user
-	int trackingROI_y = out.rows / heightDivider;
+	//Good ROI parameters:
+	//	widthDivider = 3;
+	//	heightDivider = 10;
+
+	int widthDivider = 1;															//sets the ROI's width (ROI defined by the user)
+	int heightDivider = 1;															//sets the ROI's height (ROI defined by the user)
+
 	
-	int	notTrackedWidth = (out.cols / widthDivider) * 2;							//Used to merge the filterResult-Mat and the raw image
-	int trackingROI_width = out.cols - notTrackedWidth;
-	int trackingROI_height = out.rows - ((out.rows / heightDivider) * 2);
+	//Bug in following:
+	//int trackingROI_x = out.cols / widthDivider;									//Define the coordinates for the ROI defined by the user
+	//int trackingROI_y = out.rows / heightDivider;
+	//int	notTrackedWidth = (out.cols / widthDivider) * 2;							//Used to merge the filterResult-Mat and the raw image
+	//int trackingROI_width = out.cols - notTrackedWidth;
+	//int trackingROI_height = out.rows - ((out.rows / heightDivider) * 2);
+
+	//Replaced with
+
+	int trackingROI_x = 0;
+	int trackingROI_y = 0;
+	int trackingROI_width = out.cols;
+	int trackingROI_height = out.rows;
+
 
 	verticalEelinePos = out.cols / 2;												//User option, where shall the eeline be placed?
 	
+	vector<Blob*>* blobs = new vector<Blob*>();										//Create the blobvector
 
 	Rect ROI_Rect = Rect(trackingROI_x, trackingROI_y, trackingROI_width, trackingROI_height);
 	Mat ROI_DefbyUser = out(ROI_Rect);
@@ -192,12 +223,16 @@ int main()
 
 
 
+		if (_TRANSPOSE) {
+			transpose(frame, frameTransposed);
+			frame = frameTransposed;
+		}
+
 		//If the image shall be resized
 		if (_REZISE)
 			out = resizeImage(frame, _imageDivider);
 		else
 			out = frame;
-
 
 
 
@@ -234,10 +269,19 @@ int main()
 
 		/****************  Image processing part  ********************************************************************************************************************/
 		vector<vector<Point>> contours = myFindContours(filterResult);			//function uses findContours() to get all contours in the image
-		vector<Blob> blobs = createBlobs(trackingROI, contours);				//create blobs (ROI, RECT, HIST) from all rects
+		createBlobs(blobs, trackingROI, contours);								//create blobs (ROI, RECT, HIST) from all rects
 		trackers = tracking(blobs);												//tracks the blobs
 		countTrackers();														//moves tracker objects from trackers to ACTrackers if they has passed the eeline
 		/*************************************************************************************************************************************************************/
+
+
+		//Empty the blobvector
+		while (!blobs->empty()) {
+			blobs->pop_back();
+		}
+		assert(blobs->empty());
+
+
 
 
 		Mat filterResult_color;
@@ -280,6 +324,8 @@ int main()
 
 
 
+
+		stat.saveStat(rightMovCnt, leftMovCnt); //rightMovCnt = upCounter. leftMovCnt = downCounter
 
 
 
@@ -465,8 +511,8 @@ void paintTrackerinfo(Mat paintImage) {
 	for (Tracker *t : trackers) {
 		int startx = scene->getStartPos().x;
 		int starty = scene->getStartPos().y;
-		int ROIx = t->getLastBlob().getCent().x;
-		int ROIy = t->getLastBlob().getCent().y;
+		int ROIx = t->getLastBlob()->getCent().x;
+		int ROIy = t->getLastBlob()->getCent().y;
 
 		circle(paintImage, Point2f(startx + ROIx, starty + ROIy), 10, Scalar(0, 0, 255), 2, 8, 0);
 	}
@@ -475,8 +521,8 @@ void paintTrackerinfo(Mat paintImage) {
 	for (Tracker *t : ACTrackers) {
 		int startx = scene->getStartPos().x;
 		int starty = scene->getStartPos().y;
-		int ROIx = t->getLastBlob().getCent().x;
-		int ROIy = t->getLastBlob().getCent().y;
+		int ROIx = t->getLastBlob()->getCent().x;
+		int ROIy = t->getLastBlob()->getCent().y;
 
 		circle(paintImage, Point2f(startx + ROIx, starty + ROIy), 10, Scalar(0, 255, 0), 2, 8, 0);
 	}
@@ -575,7 +621,7 @@ void countTrackers() {
 /	ACTrackers contains already counted trackers. First the blobvector will be checkt for blobs belonging to trackers in ACTrackers
 /	When blobs belonging to ACTrackers are removed, the rest of the blobs will be new trackers or moved to trackers (not yet counted trackers)
 **************************************************************************************************************************************/
-vector<Tracker*> tracking(vector<Blob> blobs) {
+vector<Tracker*> tracking(vector<Blob*>* blobs) {
 /*
 /	Tests:
 /		(1) Check if all trackers is processed at the end
@@ -584,12 +630,12 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 
 
 	if (ACTrackers.size() > 0) {									//if there exists already counted trackers, the blobs belonging to this trackers must first be removed
-		ACTrackers = intersectionTest(&blobs, ACTrackers);			//intersectionTest will move blobs to "already counted trackers"
+		ACTrackers = intersectionTest(blobs, ACTrackers);			//intersectionTest will move blobs to "already counted trackers"
 	}
 
 
 	if (trackers.size() == 0) {
-		for (Blob b : blobs) {										//No trackers exists. All blobs will turn to a tracker
+		for (Blob* b : *blobs) {										//No trackers exists. All blobs will turn to a tracker
 			int lineSide = scene->LSCheck(b);
 			Tracker *t = new Tracker(lineSide, b, trackerLife);
 
@@ -600,9 +646,9 @@ vector<Tracker*> tracking(vector<Blob> blobs) {
 	}
 	
 	else {
-		trackers = intersectionTest(&blobs, trackers);				//there already exists trackers, intersectionTest will move blobs to trackers
+		trackers = intersectionTest(blobs, trackers);				//there already exists trackers, intersectionTest will move blobs to trackers
 
-		for (Blob b : blobs) {										//iterate throught the rest of the blobs and create trackers for them
+		for (Blob* b : *blobs) {										//iterate throught the rest of the blobs and create trackers for them
 			int lineSide = scene->LSCheck(b);
 			Tracker *t = new Tracker(lineSide, b, trackerLife);
 
@@ -673,7 +719,7 @@ vector<Tracker*> trackerSurvivalTest(vector<Tracker*> trackers) {
 /	Iterates throught all trackers and checks if their last matched blob intersect with one of them in the scene. If a blob intersects
 /	it will be added to the tracker and removed from the blobvector.
 **************************************************************************************************************************************/
-vector<Tracker*> intersectionTest(vector<Blob>* blobs, vector<Tracker*> trackers) {
+vector<Tracker*> intersectionTest(vector<Blob*>* blobs, vector<Tracker*> trackers) {
 	/*
 	/	Tests:
 	/		(1) Blob from getLastBlob, shall never return an emptyblob
@@ -681,12 +727,15 @@ vector<Tracker*> intersectionTest(vector<Blob>* blobs, vector<Tracker*> trackers
 	/
 	*/
 
+	
+
 	int i = trackers.size() - 1;
 	while(i >= 0){																//Check tracker from front (oldest tracker shall be checked first)
 		Tracker* t = trackers[i];
 		
-		vector<Blob>* restBlobs = new(vector<Blob>);
-		Blob bestBlob;															// constructs an emptyblob (WORKS)
+		vector<Blob*> restBlobs;
+		Blob* bestBlob = NULL;															// constructs an emptyblob (WORKS)
+																	
 
 		double minBhatta = DBL_MAX;
 		vector<Mat> isBlobs;													//InterSecting Blobs
@@ -697,31 +746,30 @@ vector<Tracker*> intersectionTest(vector<Blob>* blobs, vector<Tracker*> trackers
 		while (blobs->size() > 0) {
 			blobcounter++;														//DEBUG
 
-			Blob b = blobs->back();
+			Blob* b = blobs->back();
 			blobs->pop_back();													//Pop makes shure other intersecting blobs than the best is ignored
+			
+			assert(!t->getLastBlob()->emptyBlob);								//(1) DEBUG
 
-			assert(!t->getLastBlob().emptyBlob);								//(1) DEBUG
+			if (((b->getRect() & t->getLastBlob()->getRect()).area() > 0)		//intersection test
+				&& bestBlob == NULL) {										//Only one can be taken as overlapped
 
-			if ((b.getRect() & t->getLastBlob().getRect()).area() > 0) {		//intersection test
-				Mat hist1 = b.getHist();
-				Mat hist2 = t->getLastBlob().getHist();
-
-				double bhatta = compareHist(b.getHist(), t->getLastBlob().getHist(), CV_COMP_BHATTACHARYYA);
-
-				if (bhatta < minBhatta) {
-					minBhatta = bhatta;
-
-					bestBlob = b;
-				}
+				bestBlob = b;
+				
 			}
-			else { restBlobs->push_back(b); }
+			else { restBlobs.push_back(b); }
 		}
 		assert(blobcounter == numberBlobs);										//if blob is pop'ed, will all blobs still be iterated?
 
-		blobs = restBlobs;									
-																	
-		if (!bestBlob.emptyBlob) { t->fillWithBlob(bestBlob); }					//If intersection
-		else { t->fillWithEmptyBlob(); }
+		*blobs = restBlobs;									
+
+		if (!bestBlob == NULL) { 
+			t->fillWithBlob(bestBlob); 
+		
+		}					//If intersection
+		else { 
+			t->fillWithEmptyBlob(); 
+		}
 
 		t->processed = true;
 		i--;
@@ -745,7 +793,7 @@ vector<Tracker*> intersectionTest(vector<Blob>* blobs, vector<Tracker*> trackers
 /	vector<vector<Point>> contours =	points that define blobs location
 /	
 **************************************************************************************************************************************/
-vector<Blob> createBlobs(Mat image, vector<vector<Point>> contours) {
+void createBlobs(vector<Blob*>* blobs, Mat image, vector<vector<Point>> contours) {
 	/*
 	/	Tests:
 	/		(1) the rectangles height and width must be greater than 0
@@ -762,7 +810,6 @@ vector<Blob> createBlobs(Mat image, vector<vector<Point>> contours) {
 	const float* ranges[] = { hranges, sranges };
 	int channels[] = { 0, 1 };
 	Mat hist;
-	vector<Blob> blobs;
 	//------------------------------------------------------
 
 
@@ -794,12 +841,10 @@ vector<Blob> createBlobs(Mat image, vector<vector<Point>> contours) {
 
 
 		//Finally create the blob
-		Blob b(hist, rect, blobROI, cent);
-		blobs.push_back(b);
+		Blob* b = new Blob(hist, rect, blobROI, cent);
+		blobs->push_back(b);
 
 	}
-
-	return blobs;
 }
 
 /**************************************************************************************************************************************
